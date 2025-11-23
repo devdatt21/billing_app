@@ -4,6 +4,7 @@ export const CompanySchema = z.object({
   name: z.string().min(1, 'Company name is required'),
   gstin: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
+  email: z.string().optional().nullable(),
   addressLine1: z.string().optional().nullable(),
   addressLine2: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
@@ -11,7 +12,9 @@ export const CompanySchema = z.object({
   stateCode: z.string().optional().nullable(),
   bankName: z.string().optional().nullable(),
   bankAccount: z.string().optional().nullable(),
+  bankBranch: z.string().optional().nullable(),
   ifsc: z.string().optional().nullable(),
+  isOrganization: z.boolean().optional().default(false),
 });
 
 export const InvoiceLineSchema = z.object({

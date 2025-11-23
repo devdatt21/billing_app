@@ -252,15 +252,25 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                   <span className="text-xs sm:text-sm font-semibold text-gray-900">{formatIndianCurrency(invoice.subtotal)}</span>
                 </div>
                 
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-gray-700">SGST @ {invoice.sgstRate}%:</span>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-900">{formatIndianCurrency(invoice.sgstAmount)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center pb-2">
-                  <span className="text-xs sm:text-sm text-gray-700">CGST @ {invoice.cgstRate}%:</span>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-900">{formatIndianCurrency(invoice.cgstAmount)}</span>
-                </div>
+                {/* Show IGST for inter-state or SGST+CGST for intra-state */}
+                {invoice.seller.stateCode !== invoice.buyer.stateCode ? (
+                  <div className="flex justify-between items-center pb-2">
+                    <span className="text-xs sm:text-sm text-gray-700">IGST @ {(parseFloat(invoice.sgstRate) + parseFloat(invoice.cgstRate)).toFixed(2)}%:</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">{formatIndianCurrency((parseFloat(invoice.sgstAmount) + parseFloat(invoice.cgstAmount)).toFixed(2))}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs sm:text-sm text-gray-700">SGST @ {invoice.sgstRate}%:</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900">{formatIndianCurrency(invoice.sgstAmount)}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center pb-2">
+                      <span className="text-xs sm:text-sm text-gray-700">CGST @ {invoice.cgstRate}%:</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900">{formatIndianCurrency(invoice.cgstAmount)}</span>
+                    </div>
+                  </>
+                )}
                 
                 <div className="flex justify-between items-center pt-2 border-t border-gray-300">
                   <span className="text-xs sm:text-sm font-semibold text-gray-700">Total Tax:</span>

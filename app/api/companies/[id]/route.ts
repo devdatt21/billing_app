@@ -72,8 +72,23 @@ export async function PUT(
     });
     
     return NextResponse.json(company);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating company:', error);
+    
+    // Handle Prisma unique constraint violation
+    if (error.code === 'P2002') {
+      const target = error.meta?.target?.[0];
+      if (target === 'gstin') {
+        return NextResponse.json(
+          { error: 'A company with this GSTIN already exists' },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json(
+        { error: `This ${target} is already in use` },
+        { status: 409 }
+      );
+    }
     
     if (error instanceof Error) {
       return NextResponse.json(

@@ -53,8 +53,12 @@ export function calcInvoiceTotals(
 ) {
   // Calculate line amounts and subtotal
   const lineAmounts = lines.map(line => {
-    const qty = new Decimal(line.qty);
-    const rate = new Decimal(line.rate);
+    // Handle empty or invalid values by defaulting to 0
+    const qtyValue = line.qty === '' || line.qty === null || line.qty === undefined ? '0' : line.qty;
+    const rateValue = line.rate === '' || line.rate === null || line.rate === undefined ? '0' : line.rate;
+    
+    const qty = new Decimal(qtyValue);
+    const rate = new Decimal(rateValue);
     return qty.mul(rate).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
   });
 

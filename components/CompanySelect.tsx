@@ -34,6 +34,7 @@ export default function CompanySelect({
   onChange,
   label,
   placeholder = 'Search company by name, GSTIN, or phone...',
+  roleFilter,
   debounceMs = 300,
   required = false,
 }: CompanySelectProps) {
@@ -49,8 +50,9 @@ export default function CompanySelect({
   const fetchCompanies = async (searchQuery: string) => {
     setLoading(true);
     try {
+      const roleParam = roleFilter ? `&role=${roleFilter}` : '';
       const response = await apiClient.get(
-        `/api/search/companies?q=${encodeURIComponent(searchQuery)}&limit=10`
+        `/api/search/companies?q=${encodeURIComponent(searchQuery)}&limit=10${roleParam}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -139,10 +141,20 @@ export default function CompanySelect({
     setIsOpen(true);
     setSelectedIndex(-1);
     
-    if (!newQuery) {
+    // Clear selection if user edits the field
+    if (value && newQuery !== value.name) {
       onChange(null);
     }
   };
+
+  // Sync query with value when value changes externally
+  useEffect(() => {
+    if (value) {
+      setQuery(value.name);
+    } else if (!isOpen) {
+      setQuery('');
+    }
+  }, [value, isOpen]);
 
   const handleFocus = () => {
     setIsOpen(true);
@@ -162,7 +174,7 @@ export default function CompanySelect({
         <input
           ref={inputRef}
           type="text"
-          value={value ? value.name : query}
+          value={query}
           onChange={handleInputChange}
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
@@ -224,9 +236,27 @@ export default function CompanySelect({
         </ul>
       )}
 
-      {isOpen && !loading && companies.length === 0 && query.length >= 2 && (
+      {isOpen && !loading && companies.length === 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 text-center text-gray-500">
-          No companies found. Try a different search term.
+          {query.length >= 2 ? (
+            <div>No companies found. Try a different search term.</div>
+          ) : (
+            <div>
+              {roleFilter === 'seller' ? (
+                <>
+                  <div className="font-medium text-gray-700 mb-2">No seller companies found</div>
+                  <div className="text-sm">Add a company and mark it as "This is my organization"</div>
+                </>
+              ) : roleFilter === 'buyer' ? (
+                <>
+                  <div className="font-medium text-gray-700 mb-2">No buyer companies found</div>
+                  <div className="text-sm">Add customer/client companies (without checking "This is my organization")</div>
+                </>
+              ) : (
+                <div>No companies found</div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
