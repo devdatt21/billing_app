@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Invoice - SHIL-P-DIAM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        /* Custom border utility to match the specific thin lines of invoices */
+        .invoice-border {
+            border: 1px solid #000;
+        }
+        .invoice-border-r {
+            border-right: 1px solid #000;
+        }
+        .invoice-border-b {
+            border-bottom: 1px solid #000;
+        }
+        .invoice-border-t {
+            border-top: 1px solid #000;
+        }
+        .invoice-border-l {
+            border-left: 1px solid #000;
+        }
+        td, th {
+            padding: 4px;
+            vertical-align: top;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8 font-serif text-sm">
+
+    <!-- Print Button -->
+    <div class="max-w-[210mm] mx-auto mb-4 text-right no-print">
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+            Print Invoice
+        </button>
+    </div>
+
+    <!-- Main Invoice Container (A4 Width) -->
+    <div class="max-w-[210mm] mx-auto bg-white shadow-lg invoice-border min-h-[297mm]">
+        
+        <!-- Header -->
+        <div class="text-center font-bold text-lg p-1 invoice-border-b">
+            Tax Invoice
+        </div>
+
+        <!-- Top Section Grid -->
+        <div class="flex">
+            <!-- Left Column: Seller & Buyer Info -->
+            <div class="w-1/2 invoice-border-r flex flex-col">
+                
+                <!-- Seller Details -->
+                <div class="p-2 h-1/2 invoice-border-b">
+                    <h1 class="font-bold text-base">SHIL-P-DIAM</h1>
+                    <p>Floor No. GF to 2nd Floor, 27,28,</p>
+                    <p>Sarita Darshan Society,</p>
+                    <p>Amroli Road, Surat-395004</p>
+                    <p>GSTIN/UIN: 24DBJPG2119H1ZZ</p>
+                    <p>State Name : Gujarat, Code : 24</p>
+                </div>
+
+                <!-- Buyer Details -->
+                <div class="p-2 flex-grow">
+                    <p class="font-bold mb-1">Buyer (Bill to)</p>
+                    <h2 class="font-bold">Ashmira Diamonds</h2>
+                    <p>S.Y No 362/1</p>
+                    <p>Ground Floor, Office No 29 Akshar</p>
+                    <p>Diamond Market</p>
+                    <p>Varachha Road</p>
+                    <p>Surat, Surat</p>
+                    <p>Surat</p>
+                    <div class="flex mt-1">
+                        <span class="w-24">GSTIN/UIN</span>
+                        <span>: 24ABCCA5360K1ZQ</span>
+                    </div>
+                    <div class="flex">
+                        <span class="w-24">State Name</span>
+                        <span>: Gujarat, Code : 24</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Invoice Logistics -->
+            <div class="w-1/2 flex flex-col">
+                <div class="flex invoice-border-b">
+                    <div class="w-1/2 p-1 invoice-border-r">
+                        <span class="block text-xs font-bold">Invoice No.</span>
+                        <span class="font-bold">SJ/25-26/11</span>
+                    </div>
+                    <div class="w-1/2 p-1">
+                        <span class="block text-xs font-bold">Dated</span>
+                        <span class="font-bold">12-Nov-25</span>
+                    </div>
+                </div>
+                <div class="flex invoice-border-b">
+                    <div class="w-1/2 p-1 invoice-border-r h-12">
+                        <span class="block text-xs font-bold">Delivery Note</span>
+                    </div>
+                    <div class="w-1/2 p-1 h-12">
+                        <span class="block text-xs font-bold">Mode/Terms of Payment</span>
+                    </div>
+                </div>
+                <div class="flex invoice-border-b">
+                    <div class="w-1/2 p-1 invoice-border-r h-12">
+                        <span class="block text-xs font-bold">Reference No. & Date.</span>
+                    </div>
+                    <div class="w-1/2 p-1 h-12">
+                        <span class="block text-xs font-bold">Other References</span>
+                    </div>
+                </div>
+                <div class="flex invoice-border-b">
+                    <div class="w-1/2 p-1 invoice-border-r h-12">
+                        <span class="block text-xs font-bold">Buyer's Order No.</span>
+                    </div>
+                    <div class="w-1/2 p-1 h-12">
+                        <span class="block text-xs font-bold">Dated</span>
+                    </div>
+                </div>
+                <div class="flex invoice-border-b">
+                    <div class="w-1/2 p-1 invoice-border-r h-12">
+                        <span class="block text-xs font-bold">Dispatch Doc No.</span>
+                    </div>
+                    <div class="w-1/2 p-1 h-12">
+                        <span class="block text-xs font-bold">Delivery Note Date</span>
+                    </div>
+                </div>
+                <div class="flex invoice-border-b">
+                    <div class="w-1/2 p-1 invoice-border-r h-12">
+                        <span class="block text-xs font-bold">Dispatched through</span>
+                    </div>
+                    <div class="w-1/2 p-1 h-12">
+                        <span class="block text-xs font-bold">Destination</span>
+                    </div>
+                </div>
+                <div class="flex flex-grow p-1 h-12">
+                     <span class="block text-xs font-bold">Terms of Delivery</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <table class="w-full text-left invoice-border-t invoice-border-b border-collapse">
+            <thead>
+                <tr class="invoice-border-b text-center text-xs">
+                    <th class="invoice-border-r w-8 font-normal">Sl No.</th>
+                    <th class="invoice-border-r font-normal">Description of Goods</th>
+                    <th class="invoice-border-r w-20 font-normal">HSN/SAC</th>
+                    <th class="invoice-border-r w-24 font-normal">Quantity</th>
+                    <th class="invoice-border-r w-16 font-normal">Rate</th>
+                    <th class="invoice-border-r w-12 font-normal">per</th>
+                    <th class="w-24 font-normal">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Main Item Row -->
+                <tr class="h-48">
+                    <td class="invoice-border-r text-center">1</td>
+                    <td class="invoice-border-r relative">
+                        <p class="font-bold">Uncut & Polish Diamond</p>
+                        
+                        <!-- Extra rows aligned bottom right inside description cell for taxes -->
+                        <div class="absolute bottom-0 right-0 w-full text-right pr-2 pb-2 leading-loose">
+                            <p>Output CGST</p>
+                            <p>Output SGST</p>
+                            <p>Rounding Off</p>
+                        </div>
+                        
+                        <!-- Less Label -->
+                        <div class="absolute bottom-0 left-0 pl-2 pb-2">
+                            <p>Less :</p>
+                        </div>
+                    </td>
+                    <td class="invoice-border-r text-center">71023910</td>
+                    <td class="invoice-border-r text-center">
+                        <p class="font-bold">106.417 Cts</p>
+                    </td>
+                    <td class="invoice-border-r text-right">3,660.00</td>
+                    <td class="invoice-border-r text-center">Cts</td>
+                    <td class="text-right font-bold relative">
+                        <p>3,89,486.22</p>
+                        
+                        <!-- Values for extra rows -->
+                        <div class="absolute bottom-0 right-0 w-full text-right pb-2 leading-loose">
+                            <p>2,921.14</p>
+                            <p>2,921.14</p>
+                            <p>(-) 0.18</p>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Total Row -->
+                <tr class="invoice-border-t invoice-border-b">
+                    <td class="invoice-border-r"></td>
+                    <td class="invoice-border-r text-right pr-2">Total</td>
+                    <td class="invoice-border-r"></td>
+                    <td class="invoice-border-r text-center">106.417Cts</td>
+                    <td class="invoice-border-r"></td>
+                    <td class="invoice-border-r"></td>
+                    <td class="text-right font-bold text-base">₹ 3,95,328.5</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Amount in Words -->
+        <div class="invoice-border-b p-1 flex justify-between items-center">
+            <div>
+                <span class="text-xs block">Amount Chargeable (in words)</span>
+                <span class="font-bold">INR Three Lakh Ninety Five Thousand Three Hundred Twenty Eight and Five Paisa Only</span>
+            </div>
+            <div class="text-xs text-right self-start">E. & O.E</div>
+        </div>
+
+        <!-- Tax Breakdown Table -->
+        <table class="w-full text-center invoice-border-b border-collapse text-xs">
+            <thead>
+                <tr class="invoice-border-b">
+                    <th rowspan="2" class="invoice-border-r w-1/3">HSN/SAC</th>
+                    <th rowspan="2" class="invoice-border-r w-24">Taxable Value</th>
+                    <th colspan="2" class="invoice-border-r invoice-border-b">CGST</th>
+                    <th colspan="2" class="invoice-border-r invoice-border-b">SGST/UTGST</th>
+                    <th rowspan="2" class="w-24">Total<br>Tax Amount</th>
+                </tr>
+                <tr class="invoice-border-b">
+                    <th class="invoice-border-r w-12">Rate</th>
+                    <th class="invoice-border-r w-20">Amount</th>
+                    <th class="invoice-border-r w-12">Rate</th>
+                    <th class="invoice-border-r w-20">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="invoice-border-b">
+                    <td class="invoice-border-r text-left pl-2">71023910</td>
+                    <td class="invoice-border-r text-right pr-1">3,89,486.22</td>
+                    <td class="invoice-border-r">0.75%</td>
+                    <td class="invoice-border-r text-right pr-1">2,921.14</td>
+                    <td class="invoice-border-r">0.75%</td>
+                    <td class="invoice-border-r text-right pr-1">2,921.14</td>
+                    <td class="text-right pr-1">5,842.28</td>
+                </tr>
+                <tr class="font-bold">
+                    <td class="invoice-border-r text-right pr-2">Total</td>
+                    <td class="invoice-border-r text-right pr-1">3,89,486.22</td>
+                    <td class="invoice-border-r"></td>
+                    <td class="invoice-border-r text-right pr-1">2,921.14</td>
+                    <td class="invoice-border-r"></td>
+                    <td class="invoice-border-r text-right pr-1">2,921.14</td>
+                    <td class="text-right pr-1">5,842.28</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Amount in Words for Tax -->
+        <div class="invoice-border-b p-1">
+             <span class="text-xs">Tax Amount (in words) : </span>
+             <span class="font-bold">INR Five Thousand Eight Hundred Fourty Two and Twenty Eight paise Only</span>
+        </div>
+
+        <!-- Footer / Declaration Section -->
+        <!-- Part 1: Declaration and Bank Details -->
+        <div class="flex invoice-border-b">
+            <!-- Left Side: Declaration -->
+            <div class="w-1/2 invoice-border-r p-2">
+                <span class="underline text-xs mb-1 block">Declaration</span>
+                <p class="text-xs leading-tight">We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</p>
+            </div>
+
+            <!-- Right Side: Bank Details -->
+            <div class="w-1/2 p-2 text-xs">
+                <h3 class="font-bold text-center underline mb-1">Company's Bank Details</h3>
+                <div class="flex justify-between">
+                    <span>A/c Holder's Name</span>
+                    <span>: SHIL-P-DIAM</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Bank Name</span>
+                    <span>: Kotak Mahindra Bank</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>A/c No.</span>
+                    <span>: 9157261166</span>
+                </div>
+                <div class="text-right mt-1">
+                    <span>Branch & IFS Code : Rajhans House, Varaccha Road & KKBK0000885</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Part 2: Signature Section with Partition -->
+        <div class="flex h-32">
+            <!-- Left Partition: Customer Seal -->
+            <div class="w-1/2 invoice-border-r p-2 flex flex-col justify-start">
+                <span class="text-xs">Customer's Seal and Signature</span>
+            </div>
+
+            <!-- Right Partition: Authorised Signatory -->
+            <div class="w-1/2 p-2 flex flex-col justify-between items-end">
+                <span class="text-xs font-bold">for SHIL-P-DIAM</span>
+                <span class="text-xs">Authorised Signatory</span>
+            </div>
+        </div>
+
+        <!-- Very Bottom Footer -->
+        <div class="text-center text-xs p-1 invoice-border-t bg-white">
+            This is a Computer Generated Invoice
+        </div>
+
+    </div>
+
+</body>
+</html>
