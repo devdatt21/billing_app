@@ -65,6 +65,11 @@ export async function PUT(
     // Validate input
     const validated = CompanySchema.parse(body);
     
+    // Trim stateCode to prevent whitespace issues
+    if (validated.stateCode) {
+      validated.stateCode = validated.stateCode.trim();
+    }
+    
     // Update company
     const company = await prisma.company.update({
       where: { id },

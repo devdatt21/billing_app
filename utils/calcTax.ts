@@ -16,20 +16,24 @@ export function calcTaxAmounts(
   const rawSgst = tv.mul(sRate);
   const rawCgst = tv.mul(cRate);
 
-  const round = (d: Decimal) => {
+  // Round tax amounts to 2 decimal places
+  const round2 = (d: Decimal) => {
     if (rounding === "HALF_UP") return d.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
     return d.toDecimalPlaces(2, Decimal.ROUND_DOWN);
   };
 
-  const sgstAmount = round(rawSgst);
-  const cgstAmount = round(rawCgst);
+  const sgstAmount = round2(rawSgst);
+  const cgstAmount = round2(rawCgst);
 
   const totalTax = sgstAmount.plus(cgstAmount);
   const totalBeforeRounding = tv.plus(totalTax);
-  // rounding/adjustment to 2 decimals
-  const totalAmount = round(totalBeforeRounding);
+  
+  // As per Indian GST Rule 3 of CGST Rules, 2017:
+  // Total invoice amount should be rounded to nearest whole rupee
+  // Fraction of 50 paise or more = round up, less than 50 paise = round down
+  const totalAmount = totalBeforeRounding.toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
 
-  // rounding difference kept as 'rounding' (positive or negative)
+  // Rounding difference (positive or negative adjustment to reach whole rupee)
   const roundingDiff = totalAmount.minus(totalBeforeRounding);
 
   return {

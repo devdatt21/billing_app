@@ -11,6 +11,8 @@ interface InvoiceSummaryProps {
   totalTax: string;
   rounding: string;
   totalAmount: string;
+  /** If true, show IGST instead of SGST+CGST (for inter-state sales) */
+  isInterState?: boolean;
 }
 
 export default function InvoiceSummary({
@@ -22,8 +24,13 @@ export default function InvoiceSummary({
   totalTax,
   rounding,
   totalAmount,
+  isInterState = false,
 }: InvoiceSummaryProps) {
   const amountInWords = numberToWords(totalAmount);
+  
+  // For IGST, combine the rates and amounts
+  const igstRate = (parseFloat(sgstRate) + parseFloat(cgstRate)).toFixed(2);
+  const igstAmount = (parseFloat(sgstAmount) + parseFloat(cgstAmount)).toFixed(2);
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
@@ -35,21 +42,33 @@ export default function InvoiceSummary({
         <span className="font-semibold text-gray-900">{formatIndianCurrency(subtotal)}</span>
       </div>
 
-      {/* SGST */}
-      <div className="flex justify-between items-center">
-        <span className="text-gray-700">
-          SGST @ {sgstRate}%:
-        </span>
-        <span className="font-semibold text-gray-900">{formatIndianCurrency(sgstAmount)}</span>
-      </div>
+      {/* Tax Display - IGST for inter-state, SGST+CGST for intra-state */}
+      {isInterState ? (
+        <div className="flex justify-between items-center">
+          <span className="text-gray-700">
+            IGST @ {igstRate}%:
+          </span>
+          <span className="font-semibold text-gray-900">{formatIndianCurrency(igstAmount)}</span>
+        </div>
+      ) : (
+        <>
+          {/* SGST */}
+          <div className="flex justify-between items-center">
+            <span className="text-gray-700">
+              SGST @ {sgstRate}%:
+            </span>
+            <span className="font-semibold text-gray-900">{formatIndianCurrency(sgstAmount)}</span>
+          </div>
 
-      {/* CGST */}
-      <div className="flex justify-between items-center">
-        <span className="text-gray-700">
-          CGST @ {cgstRate}%:
-        </span>
-        <span className="font-semibold text-gray-900">{formatIndianCurrency(cgstAmount)}</span>
-      </div>
+          {/* CGST */}
+          <div className="flex justify-between items-center">
+            <span className="text-gray-700">
+              CGST @ {cgstRate}%:
+            </span>
+            <span className="font-semibold text-gray-900">{formatIndianCurrency(cgstAmount)}</span>
+          </div>
+        </>
+      )}
 
       {/* Total Tax */}
       <div className="flex justify-between items-center border-t pt-2">

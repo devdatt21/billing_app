@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { debounce } from '@/utils/formatting';
 import { apiClient } from '@/lib/api-client';
+import Loader from '@/components/Loader';
 
 export interface Company {
   id: number;
@@ -189,7 +190,7 @@ export default function CompanySelect({
         
         {loading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+            <Loader size="sm" />
           </div>
         )}
       </div>

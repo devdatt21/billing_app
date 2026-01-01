@@ -42,6 +42,7 @@ model Invoice {
   id              Int        @id @default(autoincrement())
   invoiceNo       String     @unique
   date            DateTime
+  heading         String     @default("TAX INVOICE") // TAX INVOICE, DELIVERY CHALLAN, or custom
   sellerId        Int
   buyerId         Int
   // Additional invoice fields
@@ -96,7 +97,7 @@ model InvoiceLine {
   description String
   hsn         String?
   qty         Decimal @db.Decimal(18,3) // 3 decimals for carats
-  unit        String? @default("Pcs")
+  unit        String? @default("Cts")
   rate        Decimal @db.Decimal(18,2)
   amount      Decimal @db.Decimal(18,2)
   // Tax breakdown per line (for detailed reporting)
@@ -117,7 +118,7 @@ model Product {
   name          String   // "Uncut & Polish Diamond"
   description   String?  // Detailed description
   hsnCode       String   // '71023910'
-  unit          String   @default("Pcs") // 'Cts', 'Pcs', 'Gms', 'Kgs'
+  unit          String   @default("Cts") // 'Cts', 'Pcs', 'Gms', 'Kgs'
   defaultRate   Decimal? @db.Decimal(12,2) // Suggested price
   taxRate       Decimal  @db.Decimal(5,2) // 1.50, 0.25, 3.00
   isService     Boolean  @default(false) // false=HSN, true=SAC

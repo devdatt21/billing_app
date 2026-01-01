@@ -15,6 +15,8 @@ export default function InvoiceEditorPage() {
   const [seller, setSeller] = useState<Company | null>(null);
   const [buyer, setBuyer] = useState<Company | null>(null);
   const [invoiceNo, setInvoiceNo] = useState('');
+  const [heading, setHeading] = useState('TAX INVOICE');
+  const [customHeading, setCustomHeading] = useState('');
   const [loadingInvoiceNo, setLoadingInvoiceNo] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [deliveryNote, setDeliveryNote] = useState('');
@@ -27,8 +29,8 @@ export default function InvoiceEditorPage() {
       description: '',
       hsn: '',
       qty: '1',
-      unit: 'Pcs',
-      rate: '0',
+      unit: 'Cts',
+      rate: '',
       amount: '0.00',
     },
   ]);
@@ -79,6 +81,7 @@ export default function InvoiceEditorPage() {
       const response = await apiClient.post('/api/invoices', {
         invoiceNo,
         date,
+        heading: heading === 'CUSTOM' ? customHeading : heading,
         seller,
         buyer,
         deliveryNote: deliveryNote || null,
@@ -115,15 +118,16 @@ export default function InvoiceEditorPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="px-3 sm:px-4 py-3 flex items-center gap-2 min-w-0">
-          <Link
-            href="/invoices"
+          <button
+            type="button"
+            onClick={() => router.back()}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-            aria-label="Back to Invoices"
+            aria-label="Go back"
           >
             <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </Link>
+          </button>
           <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Create Invoice</h1>
         </div>
       </header>
@@ -134,6 +138,39 @@ export default function InvoiceEditorPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Invoice Details</h2>
           
           <div className="grid grid-cols-1 gap-4">
+            {/* Document Type/Heading */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Document Type <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {['TAX INVOICE', 'DELIVERY CHALLAN', 'CUSTOM'].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setHeading(option)}
+                    className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      heading === option
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500'
+                    }`}
+                  >
+                    {option === 'CUSTOM' ? 'Custom' : option}
+                  </button>
+                ))}
+              </div>
+              {heading === 'CUSTOM' && (
+                <input
+                  type="text"
+                  value={customHeading}
+                  onChange={(e) => setCustomHeading(e.target.value.toUpperCase())}
+                  placeholder="Enter custom heading (e.g., PROFORMA INVOICE)"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Invoice Number <span className="text-red-500">*</span>
@@ -279,6 +316,7 @@ export default function InvoiceEditorPage() {
             totalTax={totals.totalTax}
             rounding={totals.rounding}
             totalAmount={totals.totalAmount}
+            isInterState={seller?.stateCode !== buyer?.stateCode && !!seller?.stateCode && !!buyer?.stateCode}
           />
         </div>
       </form>

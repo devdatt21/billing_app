@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatIndianCurrency } from '@/utils/formatting';
 import { apiClient } from '@/lib/api-client';
+import Loader from '@/components/Loader';
 
 interface Invoice {
   id: number;
@@ -70,7 +71,7 @@ export default function InvoicesListPage() {
       <div className="max-w-6xl mx-auto p-4">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+            <Loader size="lg" />
           </div>
         ) : invoices.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">

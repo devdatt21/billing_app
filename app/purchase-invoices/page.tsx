@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import Loader from '@/components/Loader';
 
 interface PurchaseInvoice {
   id: number;
@@ -279,11 +280,7 @@ export default function PurchaseInvoicesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen text="Loading..." />;
   }
 
   return (

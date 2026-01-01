@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatIndianCurrency, numberToWords } from '@/utils/formatting';
 import { apiClient } from '@/lib/api-client';
+import Loader from '@/components/Loader';
 
 interface Company {
   id: number;
@@ -108,12 +109,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading invoice...</p>
-        </div>
-      </div>
+      <Loader fullScreen text="Loading invoice..." />
     );
   }
 
@@ -253,7 +249,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                 </div>
                 
                 {/* Show IGST for inter-state or SGST+CGST for intra-state */}
-                {invoice.seller.stateCode !== invoice.buyer.stateCode ? (
+                {invoice.seller.stateCode?.trim() && invoice.buyer.stateCode?.trim() && invoice.seller.stateCode?.trim() !== invoice.buyer.stateCode?.trim() ? (
                   <div className="flex justify-between items-center pb-2">
                     <span className="text-xs sm:text-sm text-gray-700">IGST @ {(parseFloat(invoice.sgstRate) + parseFloat(invoice.cgstRate)).toFixed(2)}%:</span>
                     <span className="text-xs sm:text-sm font-semibold text-gray-900">{formatIndianCurrency((parseFloat(invoice.sgstAmount) + parseFloat(invoice.cgstAmount)).toFixed(2))}</span>

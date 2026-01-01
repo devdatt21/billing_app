@@ -31,6 +31,7 @@ export const CreateInvoiceSchema = z.object({
     if (typeof val === 'string') return new Date(val);
     return val;
   }),
+  heading: z.string().optional().default('TAX INVOICE'),
   sellerId: z.number().optional(),
   buyerId: z.number().optional(),
   seller: CompanySchema.optional(),

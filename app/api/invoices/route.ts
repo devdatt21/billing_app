@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
         data: {
           invoiceNo: validated.invoiceNo,
           date: validated.date,
+          heading: validated.heading || 'TAX INVOICE',
           sellerId,
           buyerId,
           deliveryNote: validated.deliveryNote || null,

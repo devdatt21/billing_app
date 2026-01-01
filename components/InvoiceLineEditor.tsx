@@ -50,8 +50,8 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
         description: '',
         hsn: '',
         qty: '1',
-        unit: 'Pcs',
-        rate: '0',
+        unit: 'Cts',
+        rate: '',
         amount: '0.00',
       },
     ]);
@@ -197,6 +197,16 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
                   step="0.01"
                   value={line.rate}
                   onChange={(e) => handleLineChange(index, 'rate', e.target.value)}
+                  onFocus={(e) => {
+                    if (e.target.value === '0') {
+                      handleLineChange(index, 'rate', '');
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value === '') {
+                      handleLineChange(index, 'rate', '0');
+                    }
+                  }}
                   placeholder="0.00"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   required

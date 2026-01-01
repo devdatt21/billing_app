@@ -31,6 +31,7 @@ interface Invoice {
   id: number;
   invoiceNo: string;
   date: string;
+  heading?: string | null;
   seller: Company;
   buyer: Company;
   deliveryNote?: string | null;
@@ -445,7 +446,10 @@ const formatDate = (dateStr: string) => {
 
 const InvoicePDF = ({ invoice }: { invoice: Invoice }) => {
   // Check if inter-state (IGST) or intra-state (CGST+SGST)
-  const isInterState = invoice.seller.stateCode !== invoice.buyer.stateCode;
+  // Trim state codes to handle whitespace issues
+  const sellerStateCode = invoice.seller.stateCode?.trim();
+  const buyerStateCode = invoice.buyer.stateCode?.trim();
+  const isInterState = sellerStateCode && buyerStateCode && sellerStateCode !== buyerStateCode;
   
   return (
     <Document>
@@ -453,7 +457,7 @@ const InvoicePDF = ({ invoice }: { invoice: Invoice }) => {
         <View style={styles.container}>
           
           {/* Header */}
-          <Text style={styles.header}>Tax Invoice</Text>
+          <Text style={styles.header}>{invoice.heading || 'Tax Invoice'}</Text>
           
           {/* Top Section Grid */}
           <View style={styles.topSection}>

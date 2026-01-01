@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import Loader from '@/components/Loader';
 
 export default function Home() {
   const { user, logout, isLoading } = useAuth();
@@ -16,11 +17,7 @@ export default function Home() {
   }, [user, isLoading, router]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen text="Loading..." />;
   }
 
   if (!user) {

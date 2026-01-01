@@ -15,6 +15,11 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validated = CompanySchema.parse(body);
     
+    // Trim stateCode to prevent whitespace issues
+    if (validated.stateCode) {
+      validated.stateCode = validated.stateCode.trim();
+    }
+    
     // Create company
     const company = await prisma.company.create({
       data: {
