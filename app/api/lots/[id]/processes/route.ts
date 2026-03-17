@@ -10,6 +10,10 @@ function parseId(id: string): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+function dateOnlyValue(date: Date): number {
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
 type CostCategory = 'PURCHASE' | 'CUTTING' | 'SARIN' | 'POLISHING' | 'CERTIFICATION' | 'MISC';
 
 function stageToCostCategory(stage: string): CostCategory {
@@ -130,6 +134,42 @@ export async function POST(
     const processDate = body.processDate ? new Date(body.processDate) : new Date();
     if (isNaN(processDate.getTime())) {
       return NextResponse.json({ error: 'Invalid processDate' }, { status: 400 });
+    }
+
+    // Do not allow process date before latest lot activity date (process/split timeline consistency)
+    const [lastProcess, lastSplitOut, lastSplitIn] = await Promise.all([
+      prisma.lotProcess.findFirst({
+        where: { lotId },
+        orderBy: { processDate: 'desc' },
+        select: { processDate: true },
+      }),
+      prisma.lotSplit.findFirst({
+        where: { sourceLotId: lotId },
+        orderBy: { splitDate: 'desc' },
+        select: { splitDate: true },
+      }),
+      prisma.lotSplit.findFirst({
+        where: { childLotId: lotId },
+        orderBy: { splitDate: 'desc' },
+        select: { splitDate: true },
+      }),
+    ]);
+
+    const latestActivityDate = [
+      lastProcess?.processDate,
+      lastSplitOut?.splitDate,
+      lastSplitIn?.splitDate,
+    ]
+      .filter((d): d is Date => d instanceof Date)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+
+    if (latestActivityDate && dateOnlyValue(processDate) < dateOnlyValue(latestActivityDate)) {
+      return NextResponse.json(
+        {
+          error: `Process date cannot be earlier than last activity date (${latestActivityDate.toISOString().slice(0, 10)})`,
+        },
+        { status: 422 }
+      );
     }
 
     const costAmount = new Decimal(String(body.costAmount ?? '0'));

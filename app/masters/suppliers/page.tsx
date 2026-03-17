@@ -55,6 +55,12 @@ export default function SuppliersPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (form.phone && form.phone.length !== 10) {
+      toast.error('Phone number must be exactly 10 digits');
+      return;
+    }
+
     setSaving(true);
     try {
       const endpoint = editingId ? `/api/suppliers/${editingId}` : '/api/suppliers';
@@ -62,7 +68,7 @@ export default function SuppliersPage() {
         ? await apiClient.put(endpoint, form)
         : await apiClient.post(endpoint, form);
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({} as { error?: string }));
         toast.error(err.error || 'Failed to save supplier');
         return;
       }
@@ -70,6 +76,8 @@ export default function SuppliersPage() {
       setForm(emptyForm);
       await fetchItems();
       toast.success(editingId ? 'Supplier updated successfully' : 'Supplier created successfully');
+    } catch {
+      toast.error('Failed to save supplier');
     } finally {
       setSaving(false);
     }

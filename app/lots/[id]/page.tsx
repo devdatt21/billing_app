@@ -71,6 +71,12 @@ interface LotProcess {
   vendor?: { id: number; name: string } | null;
 }
 
+interface ProcessTypeOption {
+  id: number;
+  name: string;
+  stage: string;
+}
+
 type TimelineEvent =
   | { kind: 'process'; date: string; data: LotProcess }
   | { kind: 'split-out'; date: string; data: SplitAsSourceEntry }
@@ -122,11 +128,8 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
   // Process form state
   const [processTypeId, setProcessTypeId] = useState('');
-  const [processTypeName, setProcessTypeName] = useState('');
-  const [processTypeStage, setProcessTypeStage] = useState('');
-  const [ptSearch, setPtSearch] = useState('');
-  const [ptOptions, setPtOptions] = useState<{ id: number; name: string; stage: string }[]>([]);
-  const [ptLoading, setPtLoading] = useState(false);
+  const [processTypeOptions, setProcessTypeOptions] = useState<ProcessTypeOption[]>([]);
+  const [processTypeLoading, setProcessTypeLoading] = useState(false);
   const [vendorId, setVendorId] = useState('');
   const [vendorName, setVendorName] = useState('');
   const [vSearch, setVSearch] = useState('');
@@ -173,14 +176,29 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [lot]);
 
+  const minProcessDate = useMemo(() => {
+    if (!lot) return '';
+    const allDates = [
+      ...lot.processes.map((p) => p.processDate),
+      ...lot.splitAsSource.map((s) => s.splitDate),
+      ...lot.splitAsChild.map((s) => s.splitDate),
+    ]
+      .map((d) => new Date(d))
+      .filter((d) => !isNaN(d.getTime()));
+
+    if (allDates.length === 0) return '';
+    const latest = new Date(Math.max(...allDates.map((d) => d.getTime())));
+    return latest.toISOString().slice(0, 10);
+  }, [lot]);
+
   useEffect(() => {
-    if (ptSearch.length < 1) { setPtOptions([]); return; }
-    setPtLoading(true);
-    apiClient.get(`/api/search/process-types?q=${encodeURIComponent(ptSearch)}`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((data) => setPtOptions(Array.isArray(data) ? data : []))
-      .finally(() => setPtLoading(false));
-  }, [ptSearch]);
+    setProcessTypeLoading(true);
+    apiClient
+      .get('/api/search/process-types?limit=100')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setProcessTypeOptions(Array.isArray(data) ? data : []))
+      .finally(() => setProcessTypeLoading(false));
+  }, []);
 
   useEffect(() => {
     if (vSearch.length < 1) { setVOptions([]); return; }
@@ -192,6 +210,15 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const submitProcess = async (e: FormEvent) => {
     e.preventDefault();
     if (!lot || !processTypeId) return;
+
+    const defaultDate = new Date().toISOString().split('T')[0];
+    const effectiveProcessDate = procDate || minProcessDate || defaultDate;
+
+    if (minProcessDate && effectiveProcessDate < minProcessDate) {
+      toast.warning(`Process date cannot be earlier than ${minProcessDate}`);
+      return;
+    }
+
     setProcSaving(true);
     try {
       const res = await apiClient.post(`/api/lots/${lot.id}/processes`, {
@@ -200,7 +227,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
         inputWeight: procInputWeight,
         outputWeight: procOutputWeight,
         costAmount: procCostAmount || '0',
-        processDate: procDate || new Date().toISOString().split('T')[0],
+        processDate: effectiveProcessDate,
         remarks: procRemarks,
       });
       if (!res.ok) {
@@ -208,8 +235,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
         toast.error(b.error || 'Failed to record process');
         return;
       }
-      setProcessTypeId(''); setProcessTypeName(''); setProcessTypeStage('');
-      setPtSearch(''); setVendorId(''); setVendorName(''); setVSearch('');
+      setProcessTypeId(''); setVendorId(''); setVendorName(''); setVSearch('');
       setProcInputWeight(''); setProcOutputWeight('');
       setProcCostAmount(''); setProcDate(''); setProcRemarks('');
       await loadLot();
@@ -441,96 +467,27 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           </div>
         </section>
 
-        <form onSubmit={submitSplit} className="bg-white border border-gray-200 rounded-lg p-5 h-fit space-y-3">
-          <h2 className="font-semibold text-gray-900">Split Lot</h2>
-          <p className="text-sm text-gray-600">Enter child weights. Residual stays on source lot.</p>
-
-          {splitWeights.map((value, idx) => (
-            <div key={idx}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Child {idx + 1} Weight (cts)</label>
-              <input
-                type="number"
-                step="0.001"
-                min="0"
-                value={value}
-                onChange={(e) => {
-                  const next = [...splitWeights];
-                  next[idx] = e.target.value;
-                  setSplitWeights(next);
-                }}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
-          ))}
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="px-3 py-2 border rounded"
-              onClick={() => setSplitWeights((prev) => [...prev, ''])}
-            >
-              Add Child
-            </button>
-            {splitWeights.length > 1 && (
-              <button
-                type="button"
-                className="px-3 py-2 border rounded"
-                onClick={() => setSplitWeights((prev) => prev.slice(0, -1))}
-              >
-                Remove Last
-              </button>
-            )}
-          </div>
-
-          <div className="text-sm text-gray-700">
-            Split total: <span className="font-semibold">{formatNumber(splitTotal)} cts</span>
-            <br />
-            Source current: <span className="font-semibold">{formatNumber(lot.currentWeight)} cts</span>
-          </div>
-
-          <button
-            type="submit"
-            disabled={splitSaving}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {splitSaving ? 'Saving split...' : 'Save Split'}
-          </button>
-        </form>
-
         <form onSubmit={submitProcess} className="bg-white border border-gray-200 rounded-lg p-5 h-fit space-y-3">
           <h2 className="font-semibold text-gray-900">Record Process</h2>
           <p className="text-sm text-gray-600">Updates lot weight and stage on save.</p>
 
-          {/* Process type search */}
+          {/* Process type dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Process Type *</label>
-            {processTypeId ? (
-              <div className="flex items-center justify-between border rounded px-3 py-2 text-sm">
-                <span>{processTypeName} <span className="text-gray-500 text-xs">({processTypeStage})</span></span>
-                <button type="button" className="text-gray-400 hover:text-red-500 text-xs" onClick={() => { setProcessTypeId(''); setProcessTypeName(''); setProcessTypeStage(''); }}>✕</button>
-              </div>
-            ) : (
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search process type…"
-                  value={ptSearch}
-                  onChange={(e) => setPtSearch(e.target.value)}
-                  className="w-full px-3 py-2 border rounded text-sm"
-                />
-                {ptLoading && <p className="text-xs text-gray-400 mt-1">Loading…</p>}
-                {ptOptions.length > 0 && (
-                  <ul className="absolute z-10 w-full bg-white border rounded shadow-sm mt-1 max-h-40 overflow-y-auto text-sm">
-                    {ptOptions.map((pt) => (
-                      <li key={pt.id}
-                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer"
-                        onClick={() => { setProcessTypeId(String(pt.id)); setProcessTypeName(pt.name); setProcessTypeStage(pt.stage); setPtSearch(''); setPtOptions([]); }}
-                      >{pt.name} <span className="text-gray-400 text-xs">({pt.stage})</span></li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
+            <select
+              value={processTypeId}
+              onChange={(e) => setProcessTypeId(e.target.value)}
+              className="w-full px-3 py-2 border rounded text-sm"
+              disabled={processTypeLoading}
+              required
+            >
+              <option value="">{processTypeLoading ? 'Loading process types...' : 'Select process type'}</option>
+              {processTypeOptions.map((pt) => (
+                <option key={pt.id} value={String(pt.id)}>
+                  {pt.name} ({pt.stage})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Vendor search */}
@@ -590,7 +547,11 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Process Date</label>
             <input type="date" value={procDate} onChange={(e) => setProcDate(e.target.value)}
+              min={minProcessDate || undefined}
               className="w-full px-3 py-2 border rounded text-sm" />
+            {minProcessDate ? (
+              <p className="mt-1 text-xs text-gray-500">Must be on or after {minProcessDate}</p>
+            ) : null}
           </div>
 
           <div>
@@ -612,6 +573,62 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
           >
             {procSaving ? 'Saving…' : 'Record Process'}
+          </button>
+        </form>
+
+        <form onSubmit={submitSplit} className="bg-white border border-gray-200 rounded-lg p-5 h-fit space-y-3">
+          <h2 className="font-semibold text-gray-900">Split Lot</h2>
+          <p className="text-sm text-gray-600">Enter child weights. Residual stays on source lot.</p>
+
+          {splitWeights.map((value, idx) => (
+            <div key={idx}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Child {idx + 1} Weight (cts)</label>
+              <input
+                type="number"
+                step="0.001"
+                min="0"
+                value={value}
+                onChange={(e) => {
+                  const next = [...splitWeights];
+                  next[idx] = e.target.value;
+                  setSplitWeights(next);
+                }}
+                className="w-full px-3 py-2 border rounded"
+              />
+            </div>
+          ))}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="px-3 py-2 border rounded"
+              onClick={() => setSplitWeights((prev) => [...prev, ''])}
+            >
+              Add Child
+            </button>
+            {splitWeights.length > 1 && (
+              <button
+                type="button"
+                className="px-3 py-2 border rounded"
+                onClick={() => setSplitWeights((prev) => prev.slice(0, -1))}
+              >
+                Remove Last
+              </button>
+            )}
+          </div>
+
+          <div className="text-sm text-gray-700">
+            Split total: <span className="font-semibold">{formatNumber(splitTotal)} cts</span>
+            <br />
+            Source current: <span className="font-semibold">{formatNumber(lot.currentWeight)} cts</span>
+          </div>
+
+          <button
+            type="submit"
+            disabled={splitSaving}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {splitSaving ? 'Saving split...' : 'Save Split'}
           </button>
         </form>
         </main>

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { ZodError } from 'zod';
 import { SupplierSchema } from '@/lib/validations';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
 
@@ -51,6 +52,9 @@ export async function PUT(
     if (err.code === 'P2002') {
       const target = err.meta?.target?.[0] || 'field';
       return NextResponse.json({ error: `${target} must be unique` }, { status: 409 });
+    }
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: error.issues[0]?.message || 'Invalid supplier data' }, { status: 400 });
     }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

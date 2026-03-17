@@ -182,7 +182,9 @@ export default function LotsPage() {
                 <tbody>
                   {items.map((lot) => (
                     <tr key={lot.id} className="border-b">
-                      <td className="py-2 font-medium">{lot.lotNo}</td>
+                      <td className="py-2 font-medium">
+                        <Link className="text-blue-600" href={`/lots/${lot.id}`}>{lot.lotNo}</Link>
+                      </td>
                       <td>
                         {lot.sourceType}
                         {lot.sourcePurchase ? (

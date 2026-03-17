@@ -73,6 +73,56 @@ function isActivePath(pathname: string, href: string, exact = false, excludePref
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function getInitials(name?: string): string {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function getNavIcon(label: string, className = 'h-4 w-4') {
+  const normalized = label.toLowerCase();
+
+  if (normalized.includes('purchase intake')) {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2m0 0L7 13h10l2-8H5.4M7 13l-1 5h12M9 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
+      </svg>
+    );
+  }
+
+  if (normalized.includes('lots')) {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7L12 3 4 7m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    );
+  }
+
+  if (normalized.includes('master')) {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    );
+  }
+
+  if (normalized.includes('billing')) {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0-5v2m0 14v2m9-9h-2M5 12H3m15.364 6.364l-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0L16.95 7.05M7.05 16.95l-1.414 1.414" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -131,9 +181,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }`}
       >
         <div className="flex h-full flex-col">
-          <div className="border-b border-gray-200 px-3 py-3">
+          <div className="border-b border-gray-200 bg-gradient-to-br from-white via-blue-50 to-cyan-50 px-3 py-3">
             <div className="mb-2 flex items-center justify-between gap-2">
-              {!isCollapsed || isMobile ? <h2 className="text-lg font-bold text-gray-900">Diamond ERP</h2> : null}
+              {!isCollapsed || isMobile ? (
+                <h2 className="text-lg font-bold text-gray-900">Diamond ERP</h2>
+              ) : (
+                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
+                  DE
+                </div>
+              )}
               {isMobile ? (
                 <button
                   type="button"
@@ -147,10 +203,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => setIsCollapsed((prev) => !prev)}
-                  className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
                   aria-label={isCollapsed ? 'Unfold navigation' : 'Fold navigation'}
+                  title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 >
-                  {isCollapsed ? '>>' : '<<'}
+                  {isCollapsed ? (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  )}
                 </button>
               )}
             </div>
@@ -175,7 +240,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       }
                     }}
                   >
-                    {!isMobile && isCollapsed ? item.label.charAt(0) : item.label}
+                    {!isMobile && isCollapsed ? (
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
+                        {getNavIcon(item.label)}
+                      </span>
+                    ) : (
+                      item.label
+                    )}
                   </Link>
                 );
               }
@@ -188,6 +259,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   <button
                     type="button"
                     onClick={() => {
+                      if (!isMobile && isCollapsed) {
+                        setIsCollapsed(false);
+                        if (isMasterGroup) {
+                          setShowMasterData(true);
+                        } else {
+                          setShowBilling(true);
+                        }
+                        return;
+                      }
+
                       if (isMasterGroup) {
                         setShowMasterData((prev) => !prev);
                       } else {
@@ -198,7 +279,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     aria-expanded={expanded}
                     title={!isMobile && isCollapsed ? item.label : undefined}
                   >
-                    {!isMobile && isCollapsed ? item.label.charAt(0) : item.label}
+                    {!isMobile && isCollapsed ? (
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
+                        {getNavIcon(item.label)}
+                      </span>
+                    ) : (
+                      item.label
+                    )}
                   </button>
 
                   {(isMobile || !isCollapsed) && expanded ? (
@@ -229,20 +316,38 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          {!isCollapsed || isMobile ? (
-            <div className="border-t border-gray-200 p-3">
-              <div className="mb-2 text-xs text-gray-500">
-                <p className="font-semibold text-gray-900">{user.name}</p>
-                <p>{user.role}</p>
+          <div className="border-t border-gray-200 p-3">
+            {!isCollapsed || isMobile ? (
+              <>
+                <div className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2">
+                  <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    {getInitials(user.name)}
+                    <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
+                  </div>
+                  <div className="min-w-0 text-xs text-gray-500">
+                    <p className="truncate font-semibold text-gray-900">{user.name}</p>
+                    <p className="truncate">{user.role}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={logout}
+                  className="w-full rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <div
+                  className="relative flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white"
+                  title={`${user.name} (${user.role})`}
+                >
+                  {getInitials(user.name)}
+                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
+                </div>
               </div>
-              <button
-                onClick={logout}
-                className="w-full rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
-              >
-                Logout
-              </button>
-            </div>
-          ) : null}
+            )}
+          </div>
         </div>
       </aside>
 
