@@ -104,6 +104,14 @@ export const CustomerSchema = z.object({
   isActive: z.boolean().optional().default(true),
 });
 
+export const ProcessTypeSchema = z.object({
+  name: z.string().min(1, 'Process type name is required'),
+  stage: z.enum(['CUTTING', 'SARIN_MEASUREMENT', 'POLISHING', 'READY_INVENTORY', 'SOLD']),
+  sequence: z.number().int().min(1),
+  isActive: z.boolean().optional().default(true),
+  description: z.string().optional().nullable(),
+});
+
 export const CreatePurchaseSchema = z.object({
   purchaseNo: z.string().min(1, 'Purchase number is required'),
   lotNo: z.string().optional(),
@@ -124,4 +132,5 @@ export type CompanyInput = z.infer<typeof CompanySchema>;
 export type SupplierInput = z.infer<typeof SupplierSchema>;
 export type VendorInput = z.infer<typeof VendorSchema>;
 export type CustomerInput = z.infer<typeof CustomerSchema>;
+export type ProcessTypeInput = z.infer<typeof ProcessTypeSchema>;
 export type CreatePurchaseInput = z.infer<typeof CreatePurchaseSchema>;

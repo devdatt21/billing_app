@@ -139,6 +139,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const [procCostAmount, setProcCostAmount] = useState('');
   const [procDate, setProcDate] = useState('');
   const [procRemarks, setProcRemarks] = useState('');
+  const [editingProcessId, setEditingProcessId] = useState<number | null>(null);
   const [procSaving, setProcSaving] = useState(false);
 
   const loadLot = useCallback(async () => {
@@ -207,6 +208,62 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       .then((data) => setVOptions(Array.isArray(data) ? data : []));
   }, [vSearch]);
 
+  const allowedProcessTypeOptions = useMemo(() => {
+    if (!lot) return processTypeOptions;
+
+    const stageOrder: Record<string, number> = {
+      PURCHASE: 1,
+      CUTTING: 2,
+      SARIN: 3,
+      SARIN_MEASUREMENT: 3,
+      POLISHING: 4,
+      INVENTORY: 5,
+      READY_INVENTORY: 5,
+      SELL: 6,
+      SOLD: 6,
+    };
+
+    const currentStageOrder = stageOrder[lot.currentStage] ?? 0;
+    return processTypeOptions.filter((pt) => (stageOrder[pt.stage] ?? 0) >= currentStageOrder);
+  }, [lot, processTypeOptions]);
+
+  const startEditProcess = (process: LotProcess) => {
+    if (process.status !== 'IN_PROGRESS') {
+      toast.warning('Only IN_PROGRESS process can be edited');
+      return;
+    }
+
+    const processType = process.processType;
+    if (!processType) {
+      toast.error('Process type missing on this record');
+      return;
+    }
+
+    setEditingProcessId(process.id);
+    setProcessTypeId(String(processType.id));
+    setVendorId(process.vendor ? String(process.vendor.id) : '');
+    setVendorName(process.vendor?.name || '');
+    setVSearch('');
+    setProcInputWeight(process.inputWeight);
+    setProcOutputWeight(process.outputWeight);
+    setProcCostAmount(process.costAmount);
+    setProcDate(new Date(process.processDate).toISOString().slice(0, 10));
+    setProcRemarks(process.remarks || '');
+  };
+
+  const resetProcessForm = () => {
+    setEditingProcessId(null);
+    setProcessTypeId('');
+    setVendorId('');
+    setVendorName('');
+    setVSearch('');
+    setProcInputWeight('');
+    setProcOutputWeight('');
+    setProcCostAmount('');
+    setProcDate('');
+    setProcRemarks('');
+  };
+
   const submitProcess = async (e: FormEvent) => {
     e.preventDefault();
     if (!lot || !processTypeId) return;
@@ -221,7 +278,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
     setProcSaving(true);
     try {
-      const res = await apiClient.post(`/api/lots/${lot.id}/processes`, {
+      const payload = {
         processTypeId: Number(processTypeId),
         vendorId: vendorId ? Number(vendorId) : undefined,
         inputWeight: procInputWeight,
@@ -229,17 +286,21 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
         costAmount: procCostAmount || '0',
         processDate: effectiveProcessDate,
         remarks: procRemarks,
-      });
+      };
+
+      const res = editingProcessId
+        ? await apiClient.put(`/api/lots/${lot.id}/processes/${editingProcessId}`, payload)
+        : await apiClient.post(`/api/lots/${lot.id}/processes`, payload);
+
       if (!res.ok) {
         const b = await res.json();
-        toast.error(b.error || 'Failed to record process');
+        toast.error(b.error || 'Failed to save process');
         return;
       }
-      setProcessTypeId(''); setVendorId(''); setVendorName(''); setVSearch('');
-      setProcInputWeight(''); setProcOutputWeight('');
-      setProcCostAmount(''); setProcDate(''); setProcRemarks('');
+
+      resetProcessForm();
       await loadLot();
-      toast.success('Process recorded successfully.');
+      toast.success(editingProcessId ? 'Process updated successfully.' : 'Process recorded successfully.');
     } finally {
       setProcSaving(false);
     }
@@ -396,11 +457,20 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                         {Number(p.costAmount) > 0 && (
                           <p className="text-xs text-gray-600">Cost: INR {Number(p.costAmount).toLocaleString('en-IN')}</p>
                         )}
-                        <p className="text-xs mt-0.5">
+                        <p className="text-xs mt-0.5 flex items-center gap-2">
                           <span className={`px-1.5 py-0.5 rounded text-white text-[10px] ${
                             p.status === 'COMPLETED' ? 'bg-green-600' :
                             p.status === 'IN_PROGRESS' ? 'bg-blue-600' : 'bg-gray-400'
                           }`}>{p.status}</span>
+                          {p.status === 'IN_PROGRESS' ? (
+                            <button
+                              type="button"
+                              onClick={() => startEditProcess(p)}
+                              className="text-[11px] text-blue-600 hover:underline"
+                            >
+                              Edit
+                            </button>
+                          ) : null}
                         </p>
                         {p.remarks && <p className="text-xs text-gray-500 mt-0.5">Note: {p.remarks}</p>}
                       </li>
@@ -468,7 +538,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
         </section>
 
         <form onSubmit={submitProcess} className="bg-white border border-gray-200 rounded-lg p-5 h-fit space-y-3">
-          <h2 className="font-semibold text-gray-900">Record Process</h2>
+          <h2 className="font-semibold text-gray-900">{editingProcessId ? 'Edit Process' : 'Record Process'}</h2>
           <p className="text-sm text-gray-600">Updates lot weight and stage on save.</p>
 
           {/* Process type dropdown */}
@@ -482,7 +552,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
               required
             >
               <option value="">{processTypeLoading ? 'Loading process types...' : 'Select process type'}</option>
-              {processTypeOptions.map((pt) => (
+              {allowedProcessTypeOptions.map((pt) => (
                 <option key={pt.id} value={String(pt.id)}>
                   {pt.name} ({pt.stage})
                 </option>
@@ -567,13 +637,24 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
               className="w-full px-3 py-2 border rounded text-sm" />
           </div>
 
-          <button
-            type="submit"
-            disabled={procSaving || !processTypeId}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-          >
-            {procSaving ? 'Saving…' : 'Record Process'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={procSaving || !processTypeId}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              {procSaving ? 'Saving…' : editingProcessId ? 'Update Process' : 'Record Process'}
+            </button>
+            {editingProcessId ? (
+              <button
+                type="button"
+                onClick={resetProcessForm}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            ) : null}
+          </div>
         </form>
 
         <form onSubmit={submitSplit} className="bg-white border border-gray-200 rounded-lg p-5 h-fit space-y-3">

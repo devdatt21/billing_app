@@ -87,10 +87,34 @@ export async function POST(
 
     const processType = await prisma.processType.findUnique({
       where: { id: processTypeId },
-      select: { id: true, stage: true, isActive: true },
+      select: { id: true, stage: true, sequence: true, isActive: true },
     });
     if (!processType || !processType.isActive) {
       return NextResponse.json({ error: 'Process type not found or inactive' }, { status: 400 });
+    }
+
+    // Prevent backward stage movement (e.g., Sarin after Polishing)
+    const stageSequenceRows = await prisma.processType.findMany({
+      where: { isActive: true },
+      select: { stage: true, sequence: true },
+      orderBy: { sequence: 'asc' },
+    });
+    const stageSequenceMap = stageSequenceRows.reduce<Record<string, number>>((acc, row) => {
+      if (acc[row.stage] == null || row.sequence < acc[row.stage]) {
+        acc[row.stage] = row.sequence;
+      }
+      return acc;
+    }, {});
+
+    const currentStageSeq = stageSequenceMap[lot.currentStage];
+    const selectedStageSeq = stageSequenceMap[processType.stage] ?? processType.sequence;
+    if (currentStageSeq != null && selectedStageSeq < currentStageSeq) {
+      return NextResponse.json(
+        {
+          error: `Cannot move process backward from ${lot.currentStage} to ${processType.stage}`,
+        },
+        { status: 422 }
+      );
     }
 
     const inputWeight = new Decimal(String(body.inputWeight ?? '0'));
@@ -208,7 +232,11 @@ export async function POST(
         data: {
           currentWeight: outputWeight,
           currentStage: processType.stage,
-          inventoryState: isExternalVendor ? 'WIP' : lot.inventoryState,
+          inventoryState: processType.stage === 'POLISHING'
+            ? 'READY_POLISHED'
+            : isExternalVendor
+              ? 'WIP'
+              : lot.inventoryState,
           status: 'IN_PROCESS',
           accumulatedCost: new Decimal(lot.accumulatedCost).plus(costAmount),
           updatedBy: user?.userId || null,
