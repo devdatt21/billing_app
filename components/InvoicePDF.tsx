@@ -551,7 +551,7 @@ const InvoicePDF = ({ invoice }: { invoice: Invoice }) => {
               
               <View style={styles.detailRow}>
                 <View style={[styles.detailCell, styles.detailCellBorder]}>
-                  <Text style={styles.detailLabel}>Buyer's Order No.</Text>
+                  <Text style={styles.detailLabel}>Buyer&apos;s Order No.</Text>
                 </View>
                 <View style={styles.detailCell}>
                   <Text style={styles.detailLabel}>Dated</Text>
@@ -830,11 +830,11 @@ const InvoicePDF = ({ invoice }: { invoice: Invoice }) => {
             
             {/* Bank Details */}
             <View style={styles.bankDetailsSection}>
-              <Text style={styles.bankTitle}>Company's Bank Details</Text>
+                  <Text style={styles.bankTitle}>{"Company's Bank Details"}</Text>
               {invoice.seller.bankName && (
                 <>
                   <View style={styles.bankDetailRow}>
-                    <Text style={{ fontSize: 7, width: 90 }}>A/c Holder's Name</Text>
+                    <Text style={{ fontSize: 7, width: 90 }}>{"A/c Holder's Name"}</Text>
                     <Text style={{ fontSize: 7, width: 10 }}>:</Text>
                     <Text style={{ fontSize: 7, flex: 1 }}>{invoice.seller.name}</Text>
                   </View>
@@ -864,7 +864,7 @@ const InvoicePDF = ({ invoice }: { invoice: Invoice }) => {
             
             {/* Customer Seal */}
             <View style={styles.customerSignature}>
-              <Text style={styles.signatureLabel}>Customer's Seal and Signature</Text>
+              <Text style={styles.signatureLabel}>{"Customer's Seal and Signature"}</Text>
             </View>
             
             {/* Authorized Signatory */}

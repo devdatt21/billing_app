@@ -44,8 +44,7 @@ interface CompanyFormData {
 export default function CompaniesListPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const page = 1;
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -90,7 +89,6 @@ export default function CompaniesListPage() {
       if (response.ok) {
         const data = await response.json();
         setCompanies(data.companies);
-        setTotalPages(data.pagination.totalPages);
       }
     } catch (error) {
       console.error('Error fetching companies:', error);
@@ -467,7 +465,7 @@ export default function CompaniesListPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No companies yet</h3>
-            <p className="text-gray-600 mb-6">Click "Add Company" to create your first company</p>
+            <p className="text-gray-600 mb-6">Click &quot;Add Company&quot; to create your first company</p>
           </div>
         ) : (
           <>

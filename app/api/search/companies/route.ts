@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const roleFilter = searchParams.get('role') as 'seller' | 'buyer' | null;
     
     // Build base filter based on role
-    const baseFilter: any = {};
+    const baseFilter: Prisma.CompanyWhereInput = {};
     
     if (roleFilter === 'seller') {
       // Seller companies: only show companies owned by logged-in user (isOrganization = true)

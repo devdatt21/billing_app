@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { debounce } from '@/utils/formatting';
 import { apiClient } from '@/lib/api-client';
 import Loader from '@/components/Loader';
@@ -48,7 +48,7 @@ export default function CompanySelect({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetch companies from API
-  const fetchCompanies = async (searchQuery: string) => {
+  const fetchCompanies = useCallback(async (searchQuery: string) => {
     setLoading(true);
     try {
       const roleParam = roleFilter ? `&role=${roleFilter}` : '';
@@ -64,14 +64,14 @@ export default function CompanySelect({
     } finally {
       setLoading(false);
     }
-  };
+  }, [roleFilter]);
 
   // Debounced search
-  const debouncedFetch = useCallback(
-    debounce((searchQuery: string) => {
+  const debouncedFetch = useMemo(
+    () => debounce((searchQuery: string) => {
       fetchCompanies(searchQuery);
     }, debounceMs),
-    [debounceMs]
+    [fetchCompanies, debounceMs]
   );
 
   useEffect(() => {
@@ -184,7 +184,6 @@ export default function CompanySelect({
           aria-label={label}
           aria-autocomplete="list"
           aria-controls="company-listbox"
-          aria-expanded={isOpen}
           required={required}
         />
         
@@ -246,12 +245,12 @@ export default function CompanySelect({
               {roleFilter === 'seller' ? (
                 <>
                   <div className="font-medium text-gray-700 mb-2">No seller companies found</div>
-                  <div className="text-sm">Add a company and mark it as "This is my organization"</div>
+                  <div className="text-sm">Add a company and mark it as &quot;This is my organization&quot;</div>
                 </>
               ) : roleFilter === 'buyer' ? (
                 <>
                   <div className="font-medium text-gray-700 mb-2">No buyer companies found</div>
-                  <div className="text-sm">Add customer/client companies (without checking "This is my organization")</div>
+                  <div className="text-sm">Add customer/client companies (without checking &quot;This is my organization&quot;)</div>
                 </>
               ) : (
                 <div>No companies found</div>

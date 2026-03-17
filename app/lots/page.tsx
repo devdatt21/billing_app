@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Loader from '@/components/Loader';
@@ -65,7 +65,7 @@ export default function LotsPage() {
     }
   }, [isLoading, user, router]);
 
-  const loadLots = async () => {
+  const loadLots = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ limit: '50' });
@@ -84,12 +84,12 @@ export default function LotsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     if (!user) return;
     loadLots();
-  }, [user, filters]);
+  }, [user, loadLots]);
 
   if (isLoading || loading) {
     return <Loader fullScreen text="Loading lots..." />;

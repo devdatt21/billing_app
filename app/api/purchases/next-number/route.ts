@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 function getFinancialYearParts(date = new Date()) {
@@ -28,7 +28,7 @@ function getNextSequence(current: string | null, pattern: RegExp): number {
   return Number.isNaN(value) ? 1 : value + 1;
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const fy = getFinancialYearParts();
 

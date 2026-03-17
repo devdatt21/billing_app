@@ -1,4 +1,4 @@
-// @ts-nocheck
+import { NextRequest } from 'next/server';
 import { describe, expect, it, beforeEach, jest } from '@jest/globals';
 import { GET } from './route';
 import { prisma } from '@/lib/prisma';
@@ -13,7 +13,7 @@ jest.mock('@/lib/prisma', () => ({
 
 describe('GET /api/lots/[id]', () => {
   const mockedPrisma = prisma as unknown as {
-    lot: { findUnique: jest.Mock<any> };
+    lot: { findUnique: jest.Mock };
   };
 
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('GET /api/lots/[id]', () => {
   });
 
   it('returns 400 for invalid lot id', async () => {
-    const response = await GET({} as any, { params: { id: 'abc' } });
+    const response = await GET(new NextRequest('http://localhost/api/lots/abc'), { params: { id: 'abc' } });
     const body = await response.json();
 
     expect(response.status).toBe(400);
@@ -32,7 +32,7 @@ describe('GET /api/lots/[id]', () => {
   it('returns 404 when lot is missing', async () => {
     mockedPrisma.lot.findUnique.mockResolvedValue(null);
 
-    const response = await GET({} as any, { params: { id: '999' } });
+    const response = await GET(new NextRequest('http://localhost/api/lots/999'), { params: { id: '999' } });
     const body = await response.json();
 
     expect(response.status).toBe(404);
@@ -52,7 +52,7 @@ describe('GET /api/lots/[id]', () => {
       sourcePurchase: null,
     });
 
-    const response = await GET({} as any, { params: { id: '1' } });
+    const response = await GET(new NextRequest('http://localhost/api/lots/1'), { params: { id: '1' } });
     const body = await response.json();
 
     expect(response.status).toBe(200);

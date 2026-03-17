@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
@@ -154,7 +155,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
 
     // Build filter conditions
-    const where: any = {};
+    const where: Prisma.PurchaseInvoiceWhereInput = {};
 
     // Date range filter
     if (startDate || endDate) {

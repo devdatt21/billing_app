@@ -5,6 +5,11 @@ import { prisma } from '@/lib/prisma';
 import { CompanySchema } from '@/lib/validations';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
 
+interface PrismaErrorLike {
+  code?: string;
+  meta?: { target?: string[] };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -29,12 +34,13 @@ export async function POST(request: NextRequest) {
     });
     
     return NextResponse.json(company, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating company:', error);
+    const prismaError = error as PrismaErrorLike;
     
     // Handle Prisma unique constraint violation
-    if (error.code === 'P2002') {
-      const target = error.meta?.target?.[0];
+    if (prismaError.code === 'P2002') {
+      const target = prismaError.meta?.target?.[0];
       if (target === 'gstin') {
         return NextResponse.json(
           { error: 'A company with this GSTIN already exists' },

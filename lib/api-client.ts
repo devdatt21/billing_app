@@ -123,7 +123,7 @@ class ApiClient {
     return this.fetch(url, { ...options, method: 'GET' });
   }
 
-  async post(url: string, data?: any, options: FetchOptions = {}) {
+  async post(url: string, data?: unknown, options: FetchOptions = {}) {
     return this.fetch(url, {
       ...options,
       method: 'POST',
@@ -131,7 +131,7 @@ class ApiClient {
     });
   }
 
-  async put(url: string, data?: any, options: FetchOptions = {}) {
+  async put(url: string, data?: unknown, options: FetchOptions = {}) {
     return this.fetch(url, {
       ...options,
       method: 'PUT',
@@ -139,7 +139,7 @@ class ApiClient {
     });
   }
 
-  async patch(url: string, data?: any, options: FetchOptions = {}) {
+  async patch(url: string, data?: unknown, options: FetchOptions = {}) {
     return this.fetch(url, {
       ...options,
       method: 'PATCH',

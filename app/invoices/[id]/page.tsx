@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatIndianCurrency, numberToWords } from '@/utils/formatting';
 import { apiClient } from '@/lib/api-client';
@@ -57,11 +57,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchInvoice();
-  }, [params.id]);
-
-  const fetchInvoice = async () => {
+  const fetchInvoice = useCallback(async () => {
     try {
       const response = await apiClient.get(`/api/invoices/${params.id}`);
       
@@ -82,7 +78,11 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchInvoice();
+  }, [fetchInvoice]);
 
   const handleDownloadPDF = async () => {
     try {
@@ -121,7 +121,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{error || 'Invoice not found'}</h2>
-          <p className="text-gray-600 mb-6">The invoice you're looking for doesn't exist or has been deleted.</p>
+          <p className="text-gray-600 mb-6">The invoice you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
           <button
             onClick={() => router.push('/billing_app/invoices')}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

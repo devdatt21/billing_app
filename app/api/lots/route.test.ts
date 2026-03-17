@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { describe, expect, it, beforeEach, jest } from '@jest/globals';
 import { GET } from './route';
@@ -16,8 +15,8 @@ jest.mock('@/lib/prisma', () => ({
 describe('GET /api/lots', () => {
   const mockedPrisma = prisma as unknown as {
     lot: {
-      findMany: jest.Mock<any>;
-      count: jest.Mock<any>;
+      findMany: jest.Mock;
+      count: jest.Mock;
     };
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -80,7 +80,7 @@ export default function PurchasesPage() {
     }
   }, [isLoading, user, router]);
 
-  const loadNextNumbers = async () => {
+  const loadNextNumbers = useCallback(async () => {
     const res = await apiClient.get('/api/purchases/next-number');
     if (!res.ok) return;
     const data = await res.json();
@@ -89,9 +89,9 @@ export default function PurchasesPage() {
       purchaseNo: data.purchaseNo || prev.purchaseNo,
       lotNo: data.lotNo || prev.lotNo,
     }));
-  };
+  }, []);
 
-  const loadPurchases = async () => {
+  const loadPurchases = useCallback(async () => {
     const params = new URLSearchParams({ limit: '25' });
     if (filters.q.trim()) params.set('q', filters.q.trim());
     if (filters.supplierId) params.set('supplierId', filters.supplierId);
@@ -105,9 +105,9 @@ export default function PurchasesPage() {
     }
     const data = await res.json();
     setItems(data.purchases || []);
-  };
+  }, [filters]);
 
-  const loadSupplierFilterOptions = async () => {
+  const loadSupplierFilterOptions = useCallback(async () => {
     const res = await apiClient.get('/api/suppliers?onlyActive=true&limit=200');
     if (!res.ok) {
       setSupplierFilterOptions([]);
@@ -119,7 +119,7 @@ export default function PurchasesPage() {
       name: supplier.name,
     }));
     setSupplierFilterOptions(options);
-  };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -129,12 +129,12 @@ export default function PurchasesPage() {
       setLoadingPage(false);
     };
     run();
-  }, [user]);
+  }, [user, loadNextNumbers, loadPurchases, loadSupplierFilterOptions]);
 
   useEffect(() => {
     if (!user) return;
     loadPurchases();
-  }, [filters, user]);
+  }, [user, loadPurchases]);
 
   const resetForNextEntry = async () => {
     setForm((prev) => ({

@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 export default function LoginPage() {
-  const router = useRouter();
   const { login, error: authError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,13 +25,14 @@ export default function LoginPage() {
       console.log('Login successful, redirecting...');
       // Force navigation after successful login
       window.location.href = '/';
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
+      const loginError = err as { requiresVerification?: boolean; message?: string };
       
       // Check if error is due to unverified email
-      if (err.requiresVerification) {
+      if (loginError.requiresVerification) {
         setNeedsVerification(true);
-        setError(err.message || 'Please verify your email before logging in.');
+        setError(loginError.message || 'Please verify your email before logging in.');
       } else {
         setError(err instanceof Error ? err.message : 'Login failed');
       }

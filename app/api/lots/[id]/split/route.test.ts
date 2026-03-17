@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { describe, expect, it, beforeEach, jest } from '@jest/globals';
 import { POST } from './route';
@@ -20,8 +19,8 @@ jest.mock('@/lib/auth-helpers', () => ({
 
 describe('POST /api/lots/[id]/split', () => {
   const mockedPrisma = prisma as unknown as {
-    lot: { findUnique: jest.Mock<any> };
-    $transaction: jest.Mock<any>;
+    lot: { findUnique: jest.Mock };
+    $transaction: jest.Mock;
   };
 
   const mockedGetUserFromHeaders = getUserFromHeaders as jest.Mock;

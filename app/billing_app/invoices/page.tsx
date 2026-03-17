@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatIndianCurrency } from '@/utils/formatting';
 import { apiClient } from '@/lib/api-client';
@@ -21,11 +21,7 @@ export default function InvoicesListPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [page]);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiClient.get(`/api/invoices?page=${page}&limit=10`);
@@ -39,7 +35,11 @@ export default function InvoicesListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
@@ -136,7 +136,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const [procRemarks, setProcRemarks] = useState('');
   const [procSaving, setProcSaving] = useState(false);
 
-  const loadLot = async () => {
+  const loadLot = useCallback(async () => {
     try {
       const res = await apiClient.get(`/api/lots/${params.id}`);
       if (!res.ok) {
@@ -150,11 +150,11 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
 
   useEffect(() => {
     loadLot();
-  }, [params.id]);
+  }, [loadLot]);
 
   const splitTotal = useMemo(
     () => splitWeights.reduce((sum, item) => sum + Number(item || 0), 0),

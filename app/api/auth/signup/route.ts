@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
 import { sendVerificationEmail } from '@/lib/email';
 import { z } from 'zod';
-import crypto from 'crypto';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),

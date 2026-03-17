@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { CreateInvoiceSchema } from '@/lib/validations';
-import { calcInvoiceTotals } from '@/utils/calcTax';
+import { calcInvoiceTotals, RoundingMode } from '@/utils/calcTax';
 import { numberToWords } from '@/utils/formatting';
 import Decimal from 'decimal.js';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
@@ -49,7 +49,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Calculate totals
-    const roundingMode = validated.roundingMode || (process.env.TAX_ROUNDING_MODE as any) || 'HALF_UP';
+    const envRoundingMode: RoundingMode = process.env.TAX_ROUNDING_MODE === 'TRUNCATE' ? 'TRUNCATE' : 'HALF_UP';
+    const roundingMode: RoundingMode = validated.roundingMode || envRoundingMode;
     const totals = calcInvoiceTotals(
       validated.lines,
       validated.sgstPct,

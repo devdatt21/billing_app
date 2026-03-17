@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { describe, expect, it, beforeEach, jest } from '@jest/globals';
 import { POST } from './route';
@@ -26,10 +25,10 @@ jest.mock('@/lib/auth-helpers', () => ({
 
 describe('POST /api/lots/[id]/processes', () => {
   const mockedPrisma = prisma as unknown as {
-    lot: { findUnique: jest.Mock<any> };
-    processType: { findUnique: jest.Mock<any> };
-    vendor: { findUnique: jest.Mock<any> };
-    $transaction: jest.Mock<any>;
+    lot: { findUnique: jest.Mock };
+    processType: { findUnique: jest.Mock };
+    vendor: { findUnique: jest.Mock };
+    $transaction: jest.Mock;
   };
 
   const mockedGetUser = getUserFromHeaders as jest.Mock;

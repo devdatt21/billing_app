@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { debounce } from '@/utils/formatting';
 import Loader from '@/components/Loader';
@@ -65,8 +65,8 @@ export default function EntitySelect<T extends NamedEntity>({
     }
   }, [searchEndpoint]);
 
-  const debouncedFetch = useCallback(
-    debounce((searchQuery: string) => {
+  const debouncedFetch = useMemo(
+    () => debounce((searchQuery: string) => {
       fetchItems(searchQuery);
     }, debounceMs),
     [debounceMs, fetchItems]

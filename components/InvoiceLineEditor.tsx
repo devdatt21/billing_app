@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Decimal from 'decimal.js';
 
 export interface InvoiceLine {

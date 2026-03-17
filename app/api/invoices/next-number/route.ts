@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       // Check if it matches our format SJ/YY-YY/NN
       const match = latestInvoice.invoiceNo.match(/^SJ\/(\d{2})-(\d{2})\/(\d+)$/);
       if (match) {
-        const [_, prevFyStart, prevFyEnd, prevNum] = match;
+        const [, prevFyStart, prevFyEnd, prevNum] = match;
         // Check if same financial year
         if (prevFyStart === fyStart.toString().padStart(2, '0') && 
             prevFyEnd === fyEnd.toString().padStart(2, '0')) {

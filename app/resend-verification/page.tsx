@@ -43,7 +43,7 @@ export default function ResendVerificationPage() {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Resend Verification Email</h1>
           <p className="text-gray-600">
-            Enter your email address and we'll send you a new verification link.
+            Enter your email address and we&apos;ll send you a new verification link.
           </p>
         </div>
 
