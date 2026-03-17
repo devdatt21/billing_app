@@ -82,7 +82,7 @@ export async function GET(
       processes: {
         include: {
           processType: {
-            select: { id: true, name: true, stage: true },
+            select: { id: true, name: true, stage: true, color: true },
           },
           vendor: {
             select: { id: true, name: true },

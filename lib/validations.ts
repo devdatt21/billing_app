@@ -110,6 +110,7 @@ export const ProcessTypeSchema = z.object({
   sequence: z.number().int().min(1),
   isActive: z.boolean().optional().default(true),
   description: z.string().optional().nullable(),
+  color: z.string().optional().default('#10b981'),
 });
 
 export const CreatePurchaseSchema = z.object({

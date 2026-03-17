@@ -30,15 +30,17 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const onlyActive = searchParams.get('onlyActive') === 'true';
+    const limit = Math.min(Number(searchParams.get('limit')) || 100, 500);
 
     const processTypes = await prisma.processType.findMany({
       where: {
         ...(onlyActive ? { isActive: true } : {}),
       },
       orderBy: [{ sequence: 'asc' }, { name: 'asc' }],
+      take: limit,
     });
 
-    return NextResponse.json({ processTypes });
+    return NextResponse.json(processTypes);
   } catch {
     return NextResponse.json({ error: 'Failed to fetch process types' }, { status: 500 });
   }

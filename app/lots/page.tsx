@@ -165,46 +165,48 @@ export default function LotsPage() {
           {items.length === 0 ? (
             <p className="text-gray-600">No lots found.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left border-b">
-                    <th className="py-2">Lot No</th>
-                    <th>Source</th>
-                    <th>Parent</th>
-                    <th>Current Weight</th>
-                    <th>Status</th>
-                    <th>Stage</th>
-                    <th>Children</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((lot) => (
-                    <tr key={lot.id} className="border-b">
-                      <td className="py-2 font-medium">
-                        <Link className="text-blue-600" href={`/lots/${lot.id}`}>{lot.lotNo}</Link>
-                      </td>
-                      <td>
-                        {lot.sourceType}
-                        {lot.sourcePurchase ? (
-                          <div className="text-xs text-gray-600">{lot.sourcePurchase.purchaseNo}</div>
-                        ) : null}
-                      </td>
-                      <td>
-                        {lot.parentLot ? <Link className="text-blue-600" href={`/lots/${lot.parentLot.id}`}>{lot.parentLot.lotNo}</Link> : '-'}
-                      </td>
-                      <td>{formatWeight(lot.currentWeight)} cts</td>
-                      <td>{lot.status}</td>
-                      <td>{lot.currentStage}</td>
-                      <td>{lot._count?.childLots ?? 0}</td>
-                      <td>
-                        <Link href={`/lots/${lot.id}`} className="text-blue-600 hover:text-blue-700">View</Link>
-                      </td>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full px-4 sm:px-0">
+                <table className="w-full min-w-[700px] text-xs sm:text-sm">
+                  <thead>
+                    <tr className="text-left border-b bg-gray-50">
+                      <th className="py-2 px-2 sm:px-3">Lot No</th>
+                      <th className="px-2 sm:px-3">Source</th>
+                      <th className="px-2 sm:px-3 whitespace-nowrap">Parent</th>
+                      <th className="px-2 sm:px-3 whitespace-nowrap">Weight</th>
+                      <th className="px-2 sm:px-3 whitespace-nowrap">Status</th>
+                      <th className="px-2 sm:px-3 whitespace-nowrap">Stage</th>
+                      <th className="px-2 sm:px-3 text-center">Children</th>
+                      <th className="px-2 sm:px-3 text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {items.map((lot) => (
+                      <tr key={lot.id} className="border-b hover:bg-gray-50">
+                        <td className="py-2 px-2 sm:px-3 font-medium">
+                          <Link className="text-blue-600" href={`/lots/${lot.id}`}>{lot.lotNo}</Link>
+                        </td>
+                        <td className="px-2 sm:px-3 text-xs">
+                          {lot.sourceType}
+                          {lot.sourcePurchase ? (
+                            <div className="text-[11px] text-gray-600 truncate">{lot.sourcePurchase.purchaseNo}</div>
+                          ) : null}
+                        </td>
+                        <td className="px-2 sm:px-3 whitespace-nowrap">
+                          {lot.parentLot ? <Link className="text-blue-600" href={`/lots/${lot.parentLot.id}`}>{lot.parentLot.lotNo}</Link> : '-'}
+                        </td>
+                        <td className="px-2 sm:px-3 whitespace-nowrap">{formatWeight(lot.currentWeight)}</td>
+                        <td className="px-2 sm:px-3 whitespace-nowrap text-xs">{lot.status}</td>
+                        <td className="px-2 sm:px-3 whitespace-nowrap text-xs">{lot.currentStage}</td>
+                        <td className="px-2 sm:px-3 text-center">{lot._count?.childLots ?? 0}</td>
+                        <td className="px-2 sm:px-3 text-right">
+                          <Link href={`/lots/${lot.id}`} className="text-blue-600 hover:text-blue-700 text-xs">View</Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>

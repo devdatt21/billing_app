@@ -219,27 +219,29 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
                   {lot.costs.length === 0 ? (
                     <p className="text-gray-600 text-sm">No cost entries for this lot.</p>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-left border-b">
-                            <th className="py-2">Date</th>
-                            <th>Category</th>
-                            <th>Amount</th>
-                            <th>Remarks</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {lot.costs.map((entry) => (
-                            <tr key={entry.id} className="border-b">
-                              <td className="py-2">{new Date(entry.costDate).toLocaleDateString('en-IN')}</td>
-                              <td>{entry.category}</td>
-                              <td>INR {formatNumber(entry.amount, 2)}</td>
-                              <td>{entry.remarks || '-'}</td>
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                      <div className="inline-block min-w-full px-4 sm:px-0">
+                        <table className="w-full min-w-[500px] text-xs sm:text-sm">
+                          <thead>
+                            <tr className="text-left border-b bg-gray-50">
+                              <th className="py-2 px-2 sm:px-3 whitespace-nowrap">Date</th>
+                              <th className="px-2 sm:px-3 whitespace-nowrap">Category</th>
+                              <th className="px-2 sm:px-3 whitespace-nowrap text-right">Amount</th>
+                              <th className="px-2 sm:px-3">Remarks</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {lot.costs.map((entry) => (
+                              <tr key={entry.id} className="border-b hover:bg-gray-50">
+                                <td className="py-2 px-2 sm:px-3 whitespace-nowrap text-xs">{new Date(entry.costDate).toLocaleDateString('en-IN')}</td>
+                                <td className="px-2 sm:px-3 whitespace-nowrap text-xs">{entry.category}</td>
+                                <td className="px-2 sm:px-3 whitespace-nowrap text-right text-xs">INR {formatNumber(entry.amount, 2)}</td>
+                                <td className="px-2 sm:px-3 text-xs truncate">{entry.remarks || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
                 </div>

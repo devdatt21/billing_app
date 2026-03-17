@@ -428,6 +428,7 @@ model ProcessType {
   sequence     Int
   isActive     Boolean      @default(true)
   description  String?
+  color        String       @default("#10b981")
   createdBy    Int?
   updatedBy    Int?
   createdAt    DateTime     @default(now())

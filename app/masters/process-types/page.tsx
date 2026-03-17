@@ -14,14 +14,16 @@ interface ProcessType {
   sequence: number;
   isActive: boolean;
   description?: string | null;
+  color?: string;
 }
 
-const emptyForm: { name: string; stage: Stage; sequence: number; isActive: boolean; description: string } = {
+const emptyForm: { name: string; stage: Stage; sequence: number; isActive: boolean; description: string; color: string } = {
   name: '',
   stage: 'CUTTING',
   sequence: 1,
   isActive: true,
   description: '',
+  color: '#10b981',
 };
 
 export default function ProcessTypesPage() {
@@ -36,7 +38,11 @@ export default function ProcessTypesPage() {
     setLoading(true);
     try {
       const res = await apiClient.get('/api/process-types');
-      if (res.ok) setItems((await res.json()).processTypes || []);
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : data.processTypes || [];
+        setItems(items);
+      }
     } finally {
       setLoading(false);
     }
@@ -99,6 +105,10 @@ export default function ProcessTypesPage() {
             <option value="SOLD">SOLD</option>
           </select>
           <input type="number" min={1} className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm" placeholder="Sequence" value={form.sequence} onChange={(e) => setForm({ ...form, sequence: Number(e.target.value) || 1 })} />
+          <div className="flex items-center gap-2">
+            <input type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="h-10 w-14 border rounded cursor-pointer" />
+            <span className="text-xs text-gray-600">{form.color}</span>
+          </div>
           <textarea className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm" placeholder="Description" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active</label>
           <div className="flex flex-wrap gap-2">
@@ -111,13 +121,15 @@ export default function ProcessTypesPage() {
           <h2 className="font-semibold text-gray-900 mb-3">Configured Flow Steps</h2>
           {loading ? <p className="text-gray-600">Loading...</p> : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-xs sm:text-sm">
-                <thead><tr className="text-left border-b"><th className="py-2">Name</th><th>Stage</th><th>Sequence</th><th>Status</th><th className="text-right">Actions</th></tr></thead>
+              <table className="w-full min-w-[720px] text-xs sm:text-sm">
+                <thead><tr className="text-left border-b"><th className="py-2">Name</th><th>Stage</th><th>Seq</th><th>Color</th><th>Status</th><th className="text-right">Actions</th></tr></thead>
                 <tbody>
                   {items.map((item) => (
                     <tr key={item.id} className="border-b">
-                      <td className="py-2 font-medium">{item.name}</td><td>{item.stage}</td><td>{item.sequence}</td><td>{item.isActive ? 'Active' : 'Inactive'}</td>
-                      <td className="text-right space-x-2"><button className="text-blue-600 text-xs sm:text-sm" onClick={() => { setEditingId(item.id); setForm({ name: item.name, stage: item.stage, sequence: item.sequence, isActive: item.isActive, description: item.description || '' }); }}>Edit</button><button className="text-red-600 text-xs sm:text-sm" onClick={() => onDelete(item.id)}>Delete</button></td>
+                      <td className="py-2 font-medium">{item.name}</td><td>{item.stage}</td><td>{item.sequence}</td>
+                      <td><div className="w-6 h-6 rounded-full border" style={{ backgroundColor: item.color || '#10b981' }} title={item.color} /></td>
+                      <td>{item.isActive ? 'Active' : 'Inactive'}</td>
+                      <td className="text-right space-x-2"><button className="text-blue-600 text-xs sm:text-sm" onClick={() => { setEditingId(item.id); setForm({ name: item.name, stage: item.stage, sequence: item.sequence, isActive: item.isActive, description: item.description || '', color: item.color || '#10b981' }); }}>Edit</button><button className="text-red-600 text-xs sm:text-sm" onClick={() => onDelete(item.id)}>Delete</button></td>
                     </tr>
                   ))}
                 </tbody>

@@ -67,7 +67,7 @@ interface LotProcess {
   lossWeight: string;
   costAmount: string;
   remarks?: string | null;
-  processType?: { id: number; name: string; stage: string } | null;
+  processType?: { id: number; name: string; stage: string; color?: string } | null;
   vendor?: { id: number; name: string } | null;
 }
 
@@ -75,6 +75,7 @@ interface ProcessTypeOption {
   id: number;
   name: string;
   stage: string;
+  color?: string;
 }
 
 type TimelineEvent =
@@ -439,9 +440,10 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                 {timeline.map((event) => {
                   if (event.kind === 'process') {
                     const p = event.data as LotProcess;
+                    const dotColor = p.processType?.color || '#10b981';
                     return (
                       <li key={`proc-${p.id}`} className="relative">
-                        <span className="absolute -left-[1.3rem] top-1 w-3 h-3 rounded-full bg-green-500 border-2 border-white" />
+                        <span className="absolute -left-[1.3rem] top-1 w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: dotColor }} />
                         <p className="text-xs text-gray-500">{formatDate(p.processDate)}</p>
                         <p className="text-sm font-semibold text-gray-900">
                           {p.processType?.name ?? 'Process'}
@@ -518,20 +520,22 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             {lot.childLots.length === 0 ? (
               <p className="text-gray-600 text-sm">No child lots yet.</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead><tr className="text-left border-b"><th className="py-2">Lot</th><th>Initial</th><th>Current</th><th>Status</th></tr></thead>
-                  <tbody>
-                    {lot.childLots.map((child) => (
-                      <tr key={child.id} className="border-b">
-                        <td className="py-2"><Link href={`/lots/${child.id}`} className="text-blue-600">{child.lotNo}</Link></td>
-                        <td>{formatNumber(child.initialWeight)} cts</td>
-                        <td>{formatNumber(child.currentWeight)} cts</td>
-                        <td>{child.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full px-4 sm:px-0">
+                  <table className="w-full min-w-[500px] text-xs sm:text-sm">
+                    <thead><tr className="text-left border-b"><th className="py-2 px-2 sm:px-3">Lot</th><th className="px-2 sm:px-3">Initial</th><th className="px-2 sm:px-3">Current</th><th className="px-2 sm:px-3">Status</th></tr></thead>
+                    <tbody>
+                      {lot.childLots.map((child) => (
+                        <tr key={child.id} className="border-b hover:bg-gray-50">
+                          <td className="py-2 px-2 sm:px-3"><Link href={`/lots/${child.id}`} className="text-blue-600 break-words">{child.lotNo}</Link></td>
+                          <td className="px-2 sm:px-3 whitespace-nowrap">{formatNumber(child.initialWeight)}</td>
+                          <td className="px-2 sm:px-3 whitespace-nowrap">{formatNumber(child.currentWeight)}</td>
+                          <td className="px-2 sm:px-3 whitespace-nowrap">{child.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

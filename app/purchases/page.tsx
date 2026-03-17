@@ -406,39 +406,39 @@ export default function PurchasesPage() {
           ) : items.length === 0 ? (
             <p className="text-gray-600">No purchases created yet.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left border-b">
-                    <th className="py-2">Purchase No</th>
-                    <th>Lot No</th>
-                    <th>Supplier</th>
-                    <th>Date</th>
-                    <th>Weight</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <tr key={item.id} className="border-b">
-                      <td className="py-2 font-medium">{item.purchaseNo}</td>
-                      <td>{item.lots[0]?.lotNo || '-'}</td>
-                      <td>{item.supplier?.name || '-'}</td>
-                      <td>{new Date(item.purchaseDate).toLocaleDateString()}</td>
-                      <td>{item.roughWeight}</td>
-                      <td>{item.totalAmount}</td>
-                      <td>{item.status}</td>
-                      <td>
-                        <Link href={`/purchases/${item.id}`} className="text-blue-600 hover:text-blue-700">
-                          View
-                        </Link>
-                      </td>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full px-4 sm:px-0">
+                <table className="w-full min-w-[750px] text-xs sm:text-sm">
+                  <thead>
+                    <tr className="text-left border-b bg-gray-50">
+                      <th className="py-2 px-2 sm:px-3">Purchase No</th>
+                      <th className="px-2 sm:px-3">Supplier</th>
+                      <th className="px-2 sm:px-3 whitespace-nowrap">Date</th>
+                      <th className="px-2 sm:px-3 whitespace-nowrap text-right">Weight</th>
+                      <th className="px-2 sm:px-3 whitespace-nowrap text-right">Amount</th>
+                      <th className="px-2 sm:px-3 whitespace-nowrap">Status</th>
+                      <th className="px-2 sm:px-3 text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr key={item.id} className="border-b hover:bg-gray-50">
+                        <td className="py-2 px-2 sm:px-3 font-medium">{item.purchaseNo}</td>
+                        <td className="px-2 sm:px-3 truncate">{item.supplier?.name || '-'}</td>
+                        <td className="px-2 sm:px-3 whitespace-nowrap text-xs">{new Date(item.purchaseDate).toLocaleDateString('en-IN')}</td>
+                        <td className="px-2 sm:px-3 whitespace-nowrap text-right text-xs">{item.roughWeight}</td>
+                        <td className="px-2 sm:px-3 whitespace-nowrap text-right text-xs">{item.totalAmount}</td>
+                        <td className="px-2 sm:px-3 whitespace-nowrap text-xs">{item.status}</td>
+                        <td className="px-2 sm:px-3 text-right">
+                          <Link href={`/purchases/${item.id}`} className="text-blue-600 hover:text-blue-700 text-xs">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>
