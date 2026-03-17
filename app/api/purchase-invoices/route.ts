@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
 
     // Build filter conditions
-    const where: Prisma.PurchaseInvoiceWhereInput = {};
+    const where: Prisma.PurchaseInvoiceWhereInput = { isDeleted: false };
 
     // Date range filter
     if (startDate || endDate) {

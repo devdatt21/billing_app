@@ -17,7 +17,7 @@ export async function GET(
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid vendor ID' }, { status: 400 });
 
-  const vendor = await prisma.vendor.findUnique({ where: { id } });
+  const vendor = await prisma.vendor.findFirst({ where: { id, isDeleted: false } });
   if (!vendor) return NextResponse.json({ error: 'Vendor not found' }, { status: 404 });
   return NextResponse.json(vendor);
 }
@@ -30,7 +30,7 @@ export async function PUT(
     const id = parseId(params.id);
     if (!id) return NextResponse.json({ error: 'Invalid vendor ID' }, { status: 400 });
 
-    const existing = await prisma.vendor.findUnique({ where: { id } });
+    const existing = await prisma.vendor.findFirst({ where: { id, isDeleted: false } });
     if (!existing) return NextResponse.json({ error: 'Vendor not found' }, { status: 404 });
 
     const user = getUserFromHeaders(request);
@@ -66,8 +66,8 @@ export async function DELETE(
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid vendor ID' }, { status: 400 });
 
-  const vendor = await prisma.vendor.findUnique({
-    where: { id },
+  const vendor = await prisma.vendor.findFirst({
+    where: { id, isDeleted: false },
     include: { lotProcesses: { select: { id: true }, take: 1 } },
   });
 
@@ -79,6 +79,12 @@ export async function DELETE(
     );
   }
 
-  await prisma.vendor.delete({ where: { id } });
+  await prisma.vendor.update({
+    where: { id },
+    data: {
+      isDeleted: true,
+      deletedAt: new Date(),
+    },
+  });
   return NextResponse.json({ message: 'Vendor deleted successfully' });
 }

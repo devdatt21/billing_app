@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import Loader from '@/components/Loader';
+import { useToast } from '@/contexts/ToastContext';
 
 interface Company {
   id: number;
@@ -42,6 +43,7 @@ interface CompanyFormData {
 }
 
 export default function CompaniesListPage() {
+  const toast = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const page = 1;
@@ -120,13 +122,14 @@ export default function CompaniesListPage() {
       if (response.ok) {
         await fetchCompanies();
         resetForm();
+        toast.success(editingId ? 'Company updated successfully' : 'Company created successfully');
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to save company');
+        toast.error(error.error || 'Failed to save company');
       }
     } catch (error) {
       console.error('Error saving company:', error);
-      alert('Failed to save company');
+      toast.error('Failed to save company');
     }
   };
 
@@ -152,7 +155,7 @@ export default function CompaniesListPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this company?')) return;
+    if (!window.confirm('Are you sure you want to delete this company?')) return;
     
     try {
       const response = await apiClient.fetch(`/api/companies/${id}`, {
@@ -161,13 +164,14 @@ export default function CompaniesListPage() {
 
       if (response.ok) {
         await fetchCompanies();
+        toast.success('Company deleted successfully');
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to delete company');
+        toast.error(error.error || 'Failed to delete company');
       }
     } catch (error) {
       console.error('Error deleting company:', error);
-      alert('Failed to delete company');
+      toast.error('Failed to delete company');
     }
   };
 

@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/contexts/ToastContext';
 
 interface ParentLot {
   id: number;
@@ -112,6 +113,7 @@ function formatDate(value: string): string {
 
 export default function LotDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const toast = useToast();
   const [lot, setLot] = useState<LotDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,7 +205,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       });
       if (!res.ok) {
         const b = await res.json();
-        alert(b.error || 'Failed to record process');
+        toast.error(b.error || 'Failed to record process');
         return;
       }
       setProcessTypeId(''); setProcessTypeName(''); setProcessTypeStage('');
@@ -211,7 +213,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       setProcInputWeight(''); setProcOutputWeight('');
       setProcCostAmount(''); setProcDate(''); setProcRemarks('');
       await loadLot();
-      alert('Process recorded successfully.');
+      toast.success('Process recorded successfully.');
     } finally {
       setProcSaving(false);
     }
@@ -227,7 +229,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       .map((weight) => ({ weight: weight.toFixed(3) }));
 
     if (children.length === 0) {
-      alert('Enter at least one valid child weight');
+      toast.warning('Enter at least one valid child weight');
       return;
     }
 
@@ -239,13 +241,13 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
       if (!res.ok) {
         const body = await res.json();
-        alert(body.error || 'Failed to split lot');
+        toast.error(body.error || 'Failed to split lot');
         return;
       }
 
       setSplitWeights(['']);
       await loadLot();
-      alert('Lot split saved successfully.');
+      toast.success('Lot split saved successfully.');
     } finally {
       setSplitSaving(false);
     }

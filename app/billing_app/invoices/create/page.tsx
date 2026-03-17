@@ -7,9 +7,11 @@ import InvoiceLineEditor, { InvoiceLine } from '@/components/InvoiceLineEditor';
 import InvoiceSummary from '@/components/InvoiceSummary';
 import { calcInvoiceTotals } from '@/utils/calcTax';
 import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/contexts/ToastContext';
 
 export default function InvoiceEditorPage() {
   const router = useRouter();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [seller, setSeller] = useState<Company | null>(null);
   const [buyer, setBuyer] = useState<Company | null>(null);
@@ -65,12 +67,12 @@ export default function InvoiceEditorPage() {
     e.preventDefault();
     
     if (!seller || !buyer) {
-      alert('Please select both seller and buyer');
+      toast.warning('Please select both seller and buyer');
       return;
     }
 
     if (lines.some((line) => !line.description || !line.qty || !line.rate)) {
-      alert('Please fill in all required line item fields');
+      toast.warning('Please fill in all required line item fields');
       return;
     }
 
@@ -99,14 +101,15 @@ export default function InvoiceEditorPage() {
 
       if (response.ok) {
         const invoice = await response.json();
+        toast.success('Invoice created successfully.');
         router.push(`/billing_app/invoices/${invoice.id}`);
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error}`);
+        toast.error(error.error || 'Failed to create invoice');
       }
     } catch (error) {
       console.error('Error creating invoice:', error);
-      alert('Failed to create invoice. Please try again.');
+      toast.error('Failed to create invoice. Please try again.');
     } finally {
       setLoading(false);
     }

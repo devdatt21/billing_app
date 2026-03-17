@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { CompanySchema } from '@/lib/validations';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
@@ -17,8 +18,8 @@ export async function GET(
   try {
     const id = parseInt(params.id);
     
-    const company = await prisma.company.findUnique({
-      where: { id },
+    const company = await prisma.company.findFirst({
+      where: { id, isDeleted: false },
     });
     
     if (!company) {
@@ -46,24 +47,19 @@ export async function PUT(
     const id = parseInt(params.id);
     const body = await request.json();
     const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
     
     // Check if company exists
-    const existingCompany = await prisma.company.findUnique({
-      where: { id },
+    const existingCompany = await prisma.company.findFirst({
+      where: { id, isDeleted: false },
     });
     
     if (!existingCompany) {
       return NextResponse.json(
         { error: 'Company not found' },
         { status: 404 }
-      );
-    }
-    
-    // Check permissions: only creator or admin can edit
-    if (user?.role !== 'ADMIN' && existingCompany.createdBy !== user?.userId) {
-      return NextResponse.json(
-        { error: 'You do not have permission to edit this company' },
-        { status: 403 }
       );
     }
     
@@ -122,10 +118,13 @@ export async function DELETE(
   try {
     const id = parseInt(params.id);
     const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
     
     // Check if company exists
-    const existingCompany = await prisma.company.findUnique({
-      where: { id },
+    const existingCompany = await prisma.company.findFirst({
+      where: { id, isDeleted: false },
       include: {
         invoicesAsSeller: true,
         invoicesAsBuyer: true,
@@ -139,14 +138,6 @@ export async function DELETE(
       );
     }
     
-    // Check permissions: only creator or admin can delete
-    if (user?.role !== 'ADMIN' && existingCompany.createdBy !== user?.userId) {
-      return NextResponse.json(
-        { error: 'You do not have permission to delete this company' },
-        { status: 403 }
-      );
-    }
-    
     // Check if company is used in invoices
     if (existingCompany.invoicesAsSeller.length > 0 || existingCompany.invoicesAsBuyer.length > 0) {
       return NextResponse.json(
@@ -155,9 +146,13 @@ export async function DELETE(
       );
     }
     
-    // Delete company
-    await prisma.company.delete({
+    // Soft-delete company
+    await prisma.company.update({
       where: { id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      } as unknown as Prisma.CompanyUpdateInput,
     });
     
     return NextResponse.json({ message: 'Company deleted successfully' });

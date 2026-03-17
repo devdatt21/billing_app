@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
 
     const customers = await prisma.customer.findMany({
       where: {
+        isDeleted: false,
         isActive: true,
         ...(q
           ? {

@@ -12,19 +12,13 @@ function normalizedLotNo(input?: string | null, purchaseNo?: string): string {
   return `LOT-${base}`;
 }
 
-function canWritePurchase(role?: string | null): boolean {
-  if (!role) return false;
-  const normalized = role.toUpperCase();
-  return normalized === 'ADMIN' || normalized === 'ACCOUNTANT';
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const user = getUserFromHeaders(request);
 
-    if (!canWritePurchase(user?.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions to create purchase' }, { status: 403 });
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const validated = CreatePurchaseSchema.parse(body);

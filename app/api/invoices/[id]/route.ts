@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserFromHeaders, canAccessResource } from '@/lib/auth-helpers';
+import { getUserFromHeaders } from '@/lib/auth-helpers';
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +10,10 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id);
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
     
     if (isNaN(id)) {
       return NextResponse.json(
@@ -33,15 +37,6 @@ export async function GET(
       return NextResponse.json(
         { error: 'Invoice not found' },
         { status: 404 }
-      );
-    }
-    
-    // Check access: admins can see all, users only their own
-    const user = getUserFromHeaders(request);
-    if (!canAccessResource(user, invoice.createdBy)) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
       );
     }
     

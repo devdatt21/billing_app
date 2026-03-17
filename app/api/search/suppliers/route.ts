@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
 
     const suppliers = await prisma.supplier.findMany({
       where: {
+        isDeleted: false,
         isActive: true,
         ...(q
           ? {

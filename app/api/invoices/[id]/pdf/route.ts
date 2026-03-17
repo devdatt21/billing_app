@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import ReactPDF from '@react-pdf/renderer';
 import InvoicePDF from '@/components/InvoicePDF';
-import { getUserFromHeaders, canAccessResource } from '@/lib/auth-helpers';
+import { getUserFromHeaders } from '@/lib/auth-helpers';
 
 export async function GET(
   request: NextRequest,
@@ -12,6 +12,10 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id);
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
     
     if (isNaN(id)) {
       return NextResponse.json(
@@ -38,15 +42,6 @@ export async function GET(
       );
     }
     
-    // Check access: admins can see all, users only their own
-    const user = getUserFromHeaders(request);
-    if (!canAccessResource(user, invoice.createdBy)) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
-    }
-
     // Convert Date and Decimal types to strings for PDF component
     const invoiceData = {
       ...invoice,

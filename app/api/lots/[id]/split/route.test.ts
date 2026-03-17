@@ -18,9 +18,32 @@ jest.mock('@/lib/auth-helpers', () => ({
 }));
 
 describe('POST /api/lots/[id]/split', () => {
+  type LotForSplit = {
+    id: number;
+    lotNo: string;
+    currentWeight: string;
+    status: string;
+    inventoryState: string;
+    currentStage: string;
+    currentLocation: string;
+  };
+  type CreatedLot = { id: number; lotNo: string; currentWeight: string };
+  type UpdatedLot = { id: number; currentWeight: string; status: string };
+  type TransactionClient = {
+    lot: {
+      update: jest.MockedFunction<() => Promise<UpdatedLot>>;
+      create: jest.MockedFunction<() => Promise<CreatedLot>>;
+    };
+    lotSplit: {
+      create: jest.MockedFunction<() => Promise<{ id: number }>>;
+    };
+  };
+
   const mockedPrisma = prisma as unknown as {
-    lot: { findUnique: jest.Mock };
-    $transaction: jest.Mock;
+    lot: { findUnique: jest.MockedFunction<() => Promise<LotForSplit | null>> };
+    $transaction: jest.MockedFunction<
+      <TResult>(callback: (tx: TransactionClient) => Promise<TResult>) => Promise<TResult>
+    >;
   };
 
   const mockedGetUserFromHeaders = getUserFromHeaders as jest.Mock;
@@ -55,20 +78,20 @@ describe('POST /api/lots/[id]/split', () => {
       currentLocation: 'Factory',
     });
 
-    const tx = {
+    const tx: TransactionClient = {
       lot: {
-        update: jest.fn().mockResolvedValue({ id: 1, currentWeight: '7.000', status: 'IN_PROCESS' }),
+        update: jest.fn<() => Promise<UpdatedLot>>().mockResolvedValue({ id: 1, currentWeight: '7.000', status: 'IN_PROCESS' }),
         create: jest
-          .fn()
+          .fn<() => Promise<CreatedLot>>()
           .mockResolvedValueOnce({ id: 11, lotNo: 'LOT/25-26/0001-S1', currentWeight: '2.000' })
           .mockResolvedValueOnce({ id: 12, lotNo: 'LOT/25-26/0001-S2', currentWeight: '1.000' }),
       },
       lotSplit: {
-        create: jest.fn().mockResolvedValue({ id: 200 }),
+        create: jest.fn<() => Promise<{ id: number }>>().mockResolvedValue({ id: 200 }),
       },
     };
 
-    mockedPrisma.$transaction.mockImplementation(async (callback: (arg0: typeof tx) => Promise<unknown>) => callback(tx));
+    mockedPrisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     const response = await POST(makeRequest({
       children: [
@@ -136,17 +159,17 @@ describe('POST /api/lots/[id]/split', () => {
       currentLocation: 'Factory',
     });
 
-    const tx = {
+    const tx: TransactionClient = {
       lot: {
-        update: jest.fn().mockResolvedValue({ id: 1, currentWeight: '0.000', status: 'CLOSED' }),
-        create: jest.fn().mockResolvedValue({ id: 11, lotNo: 'LOT/25-26/0001-S1', currentWeight: '3.000' }),
+        update: jest.fn<() => Promise<UpdatedLot>>().mockResolvedValue({ id: 1, currentWeight: '0.000', status: 'CLOSED' }),
+        create: jest.fn<() => Promise<CreatedLot>>().mockResolvedValue({ id: 11, lotNo: 'LOT/25-26/0001-S1', currentWeight: '3.000' }),
       },
       lotSplit: {
-        create: jest.fn().mockResolvedValue({ id: 201 }),
+        create: jest.fn<() => Promise<{ id: number }>>().mockResolvedValue({ id: 201 }),
       },
     };
 
-    mockedPrisma.$transaction.mockImplementation(async (callback: (arg0: typeof tx) => Promise<unknown>) => callback(tx));
+    mockedPrisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     const response = await POST(makeRequest({
       children: [{ weight: '3.000' }],

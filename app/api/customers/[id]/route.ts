@@ -17,7 +17,7 @@ export async function GET(
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid customer ID' }, { status: 400 });
 
-  const customer = await prisma.customer.findUnique({ where: { id } });
+  const customer = await prisma.customer.findFirst({ where: { id, isDeleted: false } });
   if (!customer) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
   return NextResponse.json(customer);
 }
@@ -30,7 +30,7 @@ export async function PUT(
     const id = parseId(params.id);
     if (!id) return NextResponse.json({ error: 'Invalid customer ID' }, { status: 400 });
 
-    const existing = await prisma.customer.findUnique({ where: { id } });
+    const existing = await prisma.customer.findFirst({ where: { id, isDeleted: false } });
     if (!existing) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
 
     const user = getUserFromHeaders(request);
@@ -66,8 +66,8 @@ export async function DELETE(
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid customer ID' }, { status: 400 });
 
-  const customer = await prisma.customer.findUnique({
-    where: { id },
+  const customer = await prisma.customer.findFirst({
+    where: { id, isDeleted: false },
     include: { sales: { select: { id: true }, take: 1 } },
   });
 
@@ -79,6 +79,12 @@ export async function DELETE(
     );
   }
 
-  await prisma.customer.delete({ where: { id } });
+  await prisma.customer.update({
+    where: { id },
+    data: {
+      isDeleted: true,
+      deletedAt: new Date(),
+    },
+  });
   return NextResponse.json({ message: 'Customer deleted successfully' });
 }

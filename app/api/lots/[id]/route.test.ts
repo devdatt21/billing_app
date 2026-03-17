@@ -12,8 +12,20 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 describe('GET /api/lots/[id]', () => {
+  type LotDetailResult = {
+    id: number;
+    lotNo: string;
+    parentLot: { id: number; lotNo: string };
+    childLots: Array<{ id: number; lotNo: string }>;
+    splitAsSource: Array<{ id: number; childLot: { id: number; lotNo: string } }>;
+    splitAsChild: unknown[];
+    costs: unknown[];
+    processes: unknown[];
+    sourcePurchase: null;
+  };
+
   const mockedPrisma = prisma as unknown as {
-    lot: { findUnique: jest.Mock };
+    lot: { findUnique: jest.MockedFunction<() => Promise<LotDetailResult | null>> };
   };
 
   beforeEach(() => {

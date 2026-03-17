@@ -9,12 +9,6 @@ function parseId(id: string): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function canWriteProcess(role?: string | null): boolean {
-  if (!role) return false;
-  const r = role.toUpperCase();
-  return r === 'ADMIN' || r === 'ACCOUNTANT';
-}
-
 // PATCH /api/lots/[id]/processes/[processId]
 // Body: { action: 'complete' | 'cancel', outputWeight?, returnedAt?, remarks? }
 export async function PATCH(
@@ -23,8 +17,8 @@ export async function PATCH(
 ) {
   try {
     const user = getUserFromHeaders(request);
-    if (!canWriteProcess(user?.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const lotId = parseId(params.id);

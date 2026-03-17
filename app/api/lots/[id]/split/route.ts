@@ -21,12 +21,6 @@ function parseId(id: string): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function canWriteLot(role?: string | null): boolean {
-  if (!role) return false;
-  const normalized = role.toUpperCase();
-  return normalized === 'ADMIN' || normalized === 'ACCOUNTANT';
-}
-
 function defaultChildLotNo(parentLotNo: string, index: number): string {
   return `${parentLotNo}-S${index}`;
 }
@@ -37,8 +31,8 @@ export async function POST(
 ) {
   try {
     const user = getUserFromHeaders(request);
-    if (!canWriteLot(user?.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions to split lot' }, { status: 403 });
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const id = parseId(params.id);

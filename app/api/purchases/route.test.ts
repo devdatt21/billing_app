@@ -18,9 +18,37 @@ jest.mock('@/lib/auth-helpers', () => ({
 }));
 
 describe('POST /api/purchases', () => {
+  type SupplierSummary = { id: number; name: string };
+  type PurchaseWithLotResult = {
+    id: number;
+    purchaseNo: string;
+    supplier: SupplierSummary;
+    lots: Array<{
+      id: number;
+      lotNo: string;
+      costs: Array<{ id: number; category: string; amount: string }>;
+    }>;
+  };
+  type TransactionClient = {
+    purchase: {
+      create: jest.MockedFunction<() => Promise<{ id: number }>>;
+      findUnique: jest.MockedFunction<() => Promise<PurchaseWithLotResult>>;
+    };
+    lot: {
+      create: jest.MockedFunction<() => Promise<{ id: number }>>;
+    };
+    lotCost: {
+      create: jest.MockedFunction<() => Promise<{ id: number }>>;
+    };
+  };
+
   const mockedPrisma = prisma as unknown as {
-    supplier: { findUnique: jest.Mock };
-    $transaction: jest.Mock;
+    supplier: {
+      findUnique: jest.MockedFunction<() => Promise<SupplierSummary | null>>;
+    };
+    $transaction: jest.MockedFunction<
+      <TResult>(callback: (tx: TransactionClient) => Promise<TResult>) => Promise<TResult>
+    >;
   };
 
   const mockedGetUserFromHeaders = getUserFromHeaders as jest.Mock;
@@ -64,12 +92,12 @@ describe('POST /api/purchases', () => {
   });
 
   it('creates purchase, linked lot, and initial lot-cost entry in one transaction', async () => {
-    (mockedPrisma.supplier.findUnique as jest.Mock).mockResolvedValue({ id: 1, name: 'ABC Supplier' });
+    mockedPrisma.supplier.findUnique.mockResolvedValue({ id: 1, name: 'ABC Supplier' });
 
-    const tx = {
+    const tx: TransactionClient = {
       purchase: {
-        create: jest.fn().mockResolvedValue({ id: 101 }),
-        findUnique: jest.fn().mockResolvedValue({
+        create: jest.fn<() => Promise<{ id: number }>>().mockResolvedValue({ id: 101 }),
+        findUnique: jest.fn<() => Promise<PurchaseWithLotResult>>().mockResolvedValue({
           id: 101,
           purchaseNo: validPayload.purchaseNo,
           supplier: { id: 1, name: 'ABC Supplier' },
@@ -85,14 +113,14 @@ describe('POST /api/purchases', () => {
         }),
       },
       lot: {
-        create: jest.fn().mockResolvedValue({ id: 201 }),
+        create: jest.fn<() => Promise<{ id: number }>>().mockResolvedValue({ id: 201 }),
       },
       lotCost: {
-        create: jest.fn().mockResolvedValue({ id: 301 }),
+        create: jest.fn<() => Promise<{ id: number }>>().mockResolvedValue({ id: 301 }),
       },
     };
 
-    (mockedPrisma.$transaction as jest.Mock).mockImplementation(async (callback: (arg0: typeof tx) => Promise<unknown>) => callback(tx));
+    mockedPrisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     const response = await POST(makeRequest());
     const body = await response.json();
@@ -129,7 +157,7 @@ describe('POST /api/purchases', () => {
   });
 
   it('rejects zero rough weight', async () => {
-    (mockedPrisma.supplier.findUnique as jest.Mock).mockResolvedValue({ id: 1, name: 'ABC Supplier' });
+    mockedPrisma.supplier.findUnique.mockResolvedValue({ id: 1, name: 'ABC Supplier' });
 
     const response = await POST(makeRequest({ ...validPayload, roughWeight: '0' }));
     const body = await response.json();
@@ -139,7 +167,7 @@ describe('POST /api/purchases', () => {
   });
 
   it('rejects negative total amount', async () => {
-    (mockedPrisma.supplier.findUnique as jest.Mock).mockResolvedValue({ id: 1, name: 'ABC Supplier' });
+    mockedPrisma.supplier.findUnique.mockResolvedValue({ id: 1, name: 'ABC Supplier' });
 
     const response = await POST(makeRequest({ ...validPayload, totalAmount: '-1' }));
     const body = await response.json();
@@ -149,7 +177,7 @@ describe('POST /api/purchases', () => {
   });
 
   it('returns 404 when supplier is missing', async () => {
-    (mockedPrisma.supplier.findUnique as jest.Mock).mockResolvedValue(null);
+    mockedPrisma.supplier.findUnique.mockResolvedValue(null);
 
     const response = await POST(makeRequest());
     const body = await response.json();
@@ -159,8 +187,8 @@ describe('POST /api/purchases', () => {
   });
 
   it('returns 409 for duplicate purchase number', async () => {
-    (mockedPrisma.supplier.findUnique as jest.Mock).mockResolvedValue({ id: 1, name: 'ABC Supplier' });
-    (mockedPrisma.$transaction as jest.Mock).mockRejectedValue({
+    mockedPrisma.supplier.findUnique.mockResolvedValue({ id: 1, name: 'ABC Supplier' });
+    mockedPrisma.$transaction.mockRejectedValue({
       code: 'P2002',
       meta: { target: ['purchaseNo'] },
     });
@@ -173,8 +201,8 @@ describe('POST /api/purchases', () => {
   });
 
   it('returns 409 for duplicate lot number', async () => {
-    (mockedPrisma.supplier.findUnique as jest.Mock).mockResolvedValue({ id: 1, name: 'ABC Supplier' });
-    (mockedPrisma.$transaction as jest.Mock).mockRejectedValue({
+    mockedPrisma.supplier.findUnique.mockResolvedValue({ id: 1, name: 'ABC Supplier' });
+    mockedPrisma.$transaction.mockRejectedValue({
       code: 'P2002',
       meta: { target: ['lotNo'] },
     });

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { formatIndianCurrency, numberToWords } from '@/utils/formatting';
 import { apiClient } from '@/lib/api-client';
 import Loader from '@/components/Loader';
+import { useToast } from '@/contexts/ToastContext';
 
 interface Company {
   id: number;
@@ -53,6 +54,7 @@ interface Invoice {
 
 export default function InvoiceDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const toast = useToast();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +105,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
       document.body.removeChild(a);
     } catch (err) {
       console.error('Error downloading PDF:', err);
-      alert('Failed to download PDF. Please try again.');
+      toast.error('Failed to download PDF. Please try again.');
     }
   };
 

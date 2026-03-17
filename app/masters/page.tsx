@@ -48,10 +48,6 @@ export default function MastersHomePage() {
             <h2 className="text-lg font-semibold text-gray-900">Customers</h2>
             <p className="text-sm text-gray-600 mt-1">Sale-side buyers for lot realization.</p>
           </Link>
-          <Link href="/masters/process-types" className="bg-white border border-gray-200 rounded-lg p-5 hover:border-blue-400 hover:shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900">Process Types</h2>
-            <p className="text-sm text-gray-600 mt-1">Stage definitions and process sequence setup.</p>
-          </Link>
         </div>
       </main>
     </div>

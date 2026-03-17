@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/contexts/ToastContext';
 
 interface Supplier {
   id: number;
@@ -28,6 +29,7 @@ const emptyForm = {
 };
 
 export default function SuppliersPage() {
+  const toast = useToast();
   const [items, setItems] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,12 +63,13 @@ export default function SuppliersPage() {
         : await apiClient.post(endpoint, form);
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || 'Failed to save supplier');
+        toast.error(err.error || 'Failed to save supplier');
         return;
       }
       setEditingId(null);
       setForm(emptyForm);
       await fetchItems();
+      toast.success(editingId ? 'Supplier updated successfully' : 'Supplier created successfully');
     } finally {
       setSaving(false);
     }
@@ -87,14 +90,15 @@ export default function SuppliersPage() {
   };
 
   const onDelete = async (id: number) => {
-    if (!confirm('Delete this supplier?')) return;
+    if (!window.confirm('Delete this supplier?')) return;
     const res = await apiClient.delete(`/api/suppliers/${id}`);
     if (!res.ok) {
       const err = await res.json();
-      alert(err.error || 'Failed to delete supplier');
+      toast.error(err.error || 'Failed to delete supplier');
       return;
     }
     await fetchItems();
+    toast.success('Supplier deleted successfully');
   };
 
   return (
@@ -114,7 +118,17 @@ export default function SuppliersPage() {
           <input className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm" placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           <input className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm" placeholder="Code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
           <input className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm" placeholder="GSTIN" value={form.gstin} onChange={(e) => setForm({ ...form, gstin: e.target.value })} />
-          <input className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm" placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <input
+            className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm"
+            placeholder="Phone"
+            inputMode="numeric"
+            maxLength={10}
+            value={form.phone}
+            onChange={(e) => {
+              const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+              setForm({ ...form, phone: digitsOnly });
+            }}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm" placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
             <input className="w-full px-3 py-1.5 sm:py-2 border rounded text-sm" placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />

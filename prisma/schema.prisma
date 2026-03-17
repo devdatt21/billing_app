@@ -27,6 +27,8 @@ model Company {
   logoUrl          String?
   isOrganization   Boolean   @default(false) // true = your company, false = customer
   createdBy        Int?
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   invoicesAsSeller Invoice[] @relation("SellerInvoices")
@@ -36,6 +38,7 @@ model Company {
   @@index([name])
   @@index([gstin])
   @@index([createdBy])
+  @@index([isDeleted])
 }
 
 model Invoice {
@@ -163,6 +166,8 @@ model PurchaseInvoice {
   fileSize      Int // File size in bytes
   fileName      String
   uploadedBy    Int
+  isDeleted     Boolean  @default(false)
+  deletedAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   uploader      User     @relation(fields: [uploadedBy], references: [id])
@@ -171,6 +176,7 @@ model PurchaseInvoice {
   @@index([invoiceDate])
   @@index([vendorName])
   @@index([category])
+  @@index([isDeleted])
 }
 
 enum LotStatus {
@@ -271,12 +277,15 @@ model Supplier {
   isActive     Boolean    @default(true)
   createdBy    Int?
   updatedBy    Int?
+  isDeleted    Boolean    @default(false)
+  deletedAt    DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   purchases    Purchase[]
 
   @@index([name])
   @@index([isActive])
+  @@index([isDeleted])
 }
 
 model Vendor {
@@ -296,12 +305,15 @@ model Vendor {
   isActive       Boolean      @default(true)
   createdBy      Int?
   updatedBy      Int?
+  isDeleted      Boolean      @default(false)
+  deletedAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   lotProcesses   LotProcess[]
 
   @@index([name])
   @@index([isActive])
+  @@index([isDeleted])
 }
 
 model Customer {
@@ -320,12 +332,15 @@ model Customer {
   isActive     Boolean  @default(true)
   createdBy    Int?
   updatedBy    Int?
+  isDeleted    Boolean  @default(false)
+  deletedAt    DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   sales        Sale[]
 
   @@index([name])
   @@index([isActive])
+  @@index([isDeleted])
 }
 
 model Purchase {

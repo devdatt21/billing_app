@@ -39,15 +39,13 @@ Last Updated: 2026-03-16
 
 ### Access Control
 
-- Added purchase write-role guard on `POST /api/purchases`:
-  - Allowed: `ADMIN`, `ACCOUNTANT`
-  - Denied: all other roles with `403`
+- Purchase write is currently allowed for any authenticated user.
+- Role-based write guards are intentionally deferred.
 
 ### Tests
 
 - Added API tests for `POST /api/purchases` in `app/api/purchases/route.test.ts` covering:
   - Purchase->lot->cost transaction integrity
-  - Role-based write access denial
   - Edge-case validation checks (zero weight, negative amount, invalid supplier)
 - Added duplicate-conflict API tests for unique number handling:
   - Duplicate `purchaseNo` -> `409`

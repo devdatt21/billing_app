@@ -10,12 +10,6 @@ function parseId(id: string): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function canWriteProcess(role?: string | null): boolean {
-  if (!role) return false;
-  const r = role.toUpperCase();
-  return r === 'ADMIN' || r === 'ACCOUNTANT';
-}
-
 type CostCategory = 'PURCHASE' | 'CUTTING' | 'SARIN' | 'POLISHING' | 'CERTIFICATION' | 'MISC';
 
 function stageToCostCategory(stage: string): CostCategory {
@@ -55,8 +49,8 @@ export async function POST(
 ) {
   try {
     const user = getUserFromHeaders(request);
-    if (!canWriteProcess(user?.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions to record process' }, { status: 403 });
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const lotId = parseId(params.id);

@@ -13,7 +13,7 @@ Track the operational journey of each lot through manufacturing stages via proce
 ### APIs
 
 - `POST /api/lots/[id]/processes` — record a process event on a lot
-  - Role guard: ADMIN or ACCOUNTANT only → 403 otherwise
+  - Allowed for any authenticated user (RBAC deferred)
   - Validation:
     - lot must not be `SOLD` or `CLOSED` → 422
     - lot must have `currentWeight > 0` → 422
@@ -66,6 +66,6 @@ Track the operational journey of each lot through manufacturing stages via proce
 ## Next Slice Candidates
 
 1. Complete/cancel process via PATCH `/api/lots/[id]/processes/[processId]` — tests.
-2. Stage summary screen: `/masters/process-types/[id]` showing all lots currently at that stage.
+2. Stage summary/report screen grouped by process stage (without a Process Type master page).
 3. Vendor job-work screen: `/masters/vendors/[id]` showing lots currently out with that vendor.
 4. Process transition guardrail: prevent re-entry into a stage where the lot already has a COMPLETED process of the same type (optional strictness).

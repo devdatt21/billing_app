@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
-import { deleteFromCloudinary } from '@/lib/cloudinary';
 
 export async function GET(
   request: NextRequest,
@@ -28,8 +28,8 @@ export async function GET(
       );
     }
 
-    const invoice = await prisma.purchaseInvoice.findUnique({
-      where: { id: parseInt(params.id) },
+    const invoice = await prisma.purchaseInvoice.findFirst({
+      where: { id: parseInt(params.id), isDeleted: false },
       include: {
         uploader: {
           select: {
@@ -81,11 +81,9 @@ export async function DELETE(
       );
     }
 
-    const userId = decoded.userId;
-
     // Find invoice
-    const invoice = await prisma.purchaseInvoice.findUnique({
-      where: { id: parseInt(params.id) },
+    const invoice = await prisma.purchaseInvoice.findFirst({
+      where: { id: parseInt(params.id), isDeleted: false },
     });
 
     if (!invoice) {
@@ -95,29 +93,13 @@ export async function DELETE(
       );
     }
 
-    // Check if user uploaded this invoice or is admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (invoice.uploadedBy !== userId && user?.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized to delete this invoice' },
-        { status: 403 }
-      );
-    }
-
-    // Delete from Cloudinary
-    try {
-      await deleteFromCloudinary(invoice.publicId);
-    } catch (cloudinaryError) {
-      console.error('Cloudinary deletion error:', cloudinaryError);
-      // Continue with database deletion even if Cloudinary fails
-    }
-
-    // Delete from database
-    await prisma.purchaseInvoice.delete({
+    // Soft-delete invoice (preserve file for possible recovery)
+    await prisma.purchaseInvoice.update({
       where: { id: parseInt(params.id) },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      } as unknown as Prisma.PurchaseInvoiceUpdateInput,
     });
 
     return NextResponse.json(

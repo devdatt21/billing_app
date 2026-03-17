@@ -34,7 +34,6 @@ const navItems: NavItem[] = [
       { label: 'Suppliers', href: '/masters/suppliers' },
       { label: 'Vendors', href: '/masters/vendors' },
       { label: 'Customers', href: '/masters/customers' },
-      { label: 'Process Types', href: '/masters/process-types' },
     ],
   },
   {

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const roleFilter = searchParams.get('role') as 'seller' | 'buyer' | null;
     
     // Build base filter based on role
-    const baseFilter: Prisma.CompanyWhereInput = {};
+    const baseFilter: Prisma.CompanyWhereInput = { isDeleted: false };
     
     if (roleFilter === 'seller') {
       // Seller companies: only show companies owned by logged-in user (isOrganization = true)

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
 import SupplierSelect, { SupplierOption } from '@/components/SupplierSelect';
+import { useToast } from '@/contexts/ToastContext';
 
 interface PurchaseRow {
   id: number;
@@ -50,10 +51,12 @@ function todayISO(): string {
 }
 
 export default function PurchasesPage() {
+  const toast = useToast();
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
   const [loadingPage, setLoadingPage] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<PurchaseRow[]>([]);
   const [supplierFilterOptions, setSupplierFilterOptions] = useState<SupplierOption[]>([]);
@@ -91,21 +94,26 @@ export default function PurchasesPage() {
     }));
   }, []);
 
-  const loadPurchases = useCallback(async () => {
-    const params = new URLSearchParams({ limit: '25' });
-    if (filters.q.trim()) params.set('q', filters.q.trim());
-    if (filters.supplierId) params.set('supplierId', filters.supplierId);
-    if (filters.purchaseDateFrom) params.set('purchaseDateFrom', filters.purchaseDateFrom);
-    if (filters.purchaseDateTo) params.set('purchaseDateTo', filters.purchaseDateTo);
+  const loadPurchases = useCallback(async (nextFilters: PurchaseFilters, withLoading = true) => {
+    if (withLoading) setTableLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: '25' });
+      if (nextFilters.q.trim()) params.set('q', nextFilters.q.trim());
+      if (nextFilters.supplierId) params.set('supplierId', nextFilters.supplierId);
+      if (nextFilters.purchaseDateFrom) params.set('purchaseDateFrom', nextFilters.purchaseDateFrom);
+      if (nextFilters.purchaseDateTo) params.set('purchaseDateTo', nextFilters.purchaseDateTo);
 
-    const res = await apiClient.get(`/api/purchases?${params.toString()}`);
-    if (!res.ok) {
-      setItems([]);
-      return;
+      const res = await apiClient.get(`/api/purchases?${params.toString()}`);
+      if (!res.ok) {
+        setItems([]);
+        return;
+      }
+      const data = await res.json();
+      setItems(data.purchases || []);
+    } finally {
+      if (withLoading) setTableLoading(false);
     }
-    const data = await res.json();
-    setItems(data.purchases || []);
-  }, [filters]);
+  }, []);
 
   const loadSupplierFilterOptions = useCallback(async () => {
     const res = await apiClient.get('/api/suppliers?onlyActive=true&limit=200');
@@ -125,7 +133,11 @@ export default function PurchasesPage() {
     if (!user) return;
     const run = async () => {
       setLoadingPage(true);
-      await Promise.all([loadNextNumbers(), loadPurchases(), loadSupplierFilterOptions()]);
+      await Promise.all([
+        loadNextNumbers(),
+        loadPurchases({ q: '', supplierId: '', purchaseDateFrom: '', purchaseDateTo: '' }, false),
+        loadSupplierFilterOptions(),
+      ]);
       setLoadingPage(false);
     };
     run();
@@ -133,8 +145,8 @@ export default function PurchasesPage() {
 
   useEffect(() => {
     if (!user) return;
-    loadPurchases();
-  }, [user, loadPurchases]);
+    loadPurchases(filters, true);
+  }, [user, filters, loadPurchases]);
 
   const resetForNextEntry = async () => {
     setForm((prev) => ({
@@ -163,17 +175,17 @@ export default function PurchasesPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.supplier) {
-      alert('Please select a supplier');
+      toast.warning('Please select a supplier');
       return;
     }
 
     if (Number(form.roughWeight) <= 0) {
-      alert('Rough weight must be greater than 0');
+      toast.warning('Rough weight must be greater than 0');
       return;
     }
 
     if (Number(form.totalAmount) < 0) {
-      alert('Total amount cannot be negative');
+      toast.warning('Total amount cannot be negative');
       return;
     }
 
@@ -194,12 +206,12 @@ export default function PurchasesPage() {
       const res = await apiClient.post('/api/purchases', payload);
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || 'Failed to create purchase');
+        toast.error(err.error || 'Failed to create purchase');
         return;
       }
 
-      await Promise.all([resetForNextEntry(), loadPurchases()]);
-      alert('Purchase created with linked lot and initial cost entry.');
+      await Promise.all([resetForNextEntry(), loadPurchases(filters, true)]);
+      toast.success('Purchase created with linked lot and initial cost entry.');
     } finally {
       setSaving(false);
     }
@@ -340,7 +352,7 @@ export default function PurchasesPage() {
         <section className="bg-white border border-gray-200 rounded-lg p-5 xl:col-span-2">
           <div className="flex items-center justify-between mb-3 gap-3">
             <h2 className="font-semibold text-gray-900">Recent Purchases</h2>
-            <button className="text-sm text-blue-600" onClick={loadPurchases}>Refresh</button>
+            <button className="text-sm text-blue-600" onClick={() => loadPurchases(filters, true)}>Refresh</button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
@@ -387,7 +399,11 @@ export default function PurchasesPage() {
             </button>
           </div>
 
-          {items.length === 0 ? (
+          {tableLoading ? (
+            <div className="py-8 flex items-center justify-center">
+              <Loader size="md" text="Loading purchases..." />
+            </div>
+          ) : items.length === 0 ? (
             <p className="text-gray-600">No purchases created yet.</p>
           ) : (
             <div className="overflow-x-auto">

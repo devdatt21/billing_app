@@ -13,10 +13,16 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 describe('GET /api/lots', () => {
+  type LotListItem = {
+    id: number;
+    lotNo: string;
+    _count: { childLots: number };
+  };
+
   const mockedPrisma = prisma as unknown as {
     lot: {
-      findMany: jest.Mock;
-      count: jest.Mock;
+      findMany: jest.MockedFunction<() => Promise<LotListItem[]>>;
+      count: jest.MockedFunction<() => Promise<number>>;
     };
   };
 

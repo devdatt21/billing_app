@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Loader from '@/components/Loader';
+import { useToast } from '@/contexts/ToastContext';
 
 interface PurchaseInvoice {
   id: number;
@@ -34,6 +35,7 @@ interface StorageUsage {
 
 export default function PurchaseInvoicesPage() {
   const router = useRouter();
+  const toast = useToast();
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -137,7 +139,7 @@ export default function PurchaseInvoicesPage() {
       setInvoices(data.invoices);
     } catch (error) {
       console.error('Error fetching invoices:', error);
-      alert('Failed to load purchase invoices');
+      toast.error('Failed to load purchase invoices');
     } finally {
       setLoading(false);
     }
@@ -150,13 +152,13 @@ export default function PurchaseInvoicesPage() {
       // Validate file type
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
       if (!allowedTypes.includes(selectedFile.type)) {
-        alert('Only PDF and image files are allowed');
+        toast.warning('Only PDF and image files are allowed');
         return;
       }
 
       // Validate file size (10MB)
       if (selectedFile.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB');
+        toast.warning('File size must be less than 10MB');
         return;
       }
 
@@ -168,7 +170,7 @@ export default function PurchaseInvoicesPage() {
     e.preventDefault();
 
     if (!file || !invoiceNumber || !vendorName || !invoiceDate || !amount) {
-      alert('Please fill in all required fields');
+      toast.warning('Please fill in all required fields');
       return;
     }
 
@@ -211,16 +213,17 @@ export default function PurchaseInvoicesPage() {
       // Refresh invoices and storage
       await fetchInvoices();
       await fetchStorageUsage();
+      toast.success('Purchase invoice uploaded successfully.');
     } catch (error) {
       console.error('Upload error:', error);
-      alert(error instanceof Error ? error.message : 'Failed to upload invoice');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload invoice');
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this invoice?')) return;
+    if (!window.confirm('Are you sure you want to delete this invoice?')) return;
 
     try {
       const token = localStorage.getItem('accessToken');
@@ -235,9 +238,10 @@ export default function PurchaseInvoicesPage() {
 
       await fetchInvoices();
       await fetchStorageUsage();
+      toast.success('Invoice deleted successfully.');
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Failed to delete invoice');
+      toast.error('Failed to delete invoice');
     }
   };
 
@@ -622,7 +626,7 @@ export default function PurchaseInvoicesPage() {
                         window.URL.revokeObjectURL(url);
                       } catch (error) {
                         console.error('Download failed:', error);
-                        alert('Failed to download file');
+                        toast.error('Failed to download file');
                       }
                     }}
                     className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition text-sm font-medium"

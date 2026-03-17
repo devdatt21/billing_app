@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/contexts/ToastContext';
 
 interface Customer {
   id: number;
@@ -19,6 +20,7 @@ interface Customer {
 const emptyForm = { name: '', code: '', gstin: '', phone: '', city: '', state: '', openingDue: '0', isActive: true };
 
 export default function CustomersPage() {
+  const toast = useToast();
   const [items, setItems] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,26 +49,28 @@ export default function CustomersPage() {
         : await apiClient.post(endpoint, form);
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || 'Failed to save customer');
+        toast.error(err.error || 'Failed to save customer');
         return;
       }
       setEditingId(null);
       setForm(emptyForm);
       await fetchItems();
+      toast.success(editingId ? 'Customer updated successfully' : 'Customer created successfully');
     } finally {
       setSaving(false);
     }
   };
 
   const onDelete = async (id: number) => {
-    if (!confirm('Delete this customer?')) return;
+    if (!window.confirm('Delete this customer?')) return;
     const res = await apiClient.delete(`/api/customers/${id}`);
     if (!res.ok) {
       const err = await res.json();
-      alert(err.error || 'Failed to delete customer');
+      toast.error(err.error || 'Failed to delete customer');
       return;
     }
     await fetchItems();
+    toast.success('Customer deleted successfully');
   };
 
   return (

@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
     
     // Get user from headers
     const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
     const createdByUserId = user?.userId || null;
     
     // Validate input
@@ -144,11 +147,10 @@ export async function GET(request: NextRequest) {
     
     // Get user from headers
     const user = getUserFromHeaders(request);
-    
-    // Build filter: admins see all, users see only their own
-    const whereClause = user?.role === 'ADMIN' ? {} : {
-      createdBy: user?.userId,
-    };
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const whereClause = {};
     
     const [invoices, total] = await Promise.all([
       prisma.invoice.findMany({

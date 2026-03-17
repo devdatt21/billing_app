@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/contexts/ToastContext';
 
 interface Vendor {
   id: number;
@@ -17,6 +18,7 @@ interface Vendor {
 const emptyForm = { name: '', code: '', vendorType: '', specialization: '', phone: '', isActive: true };
 
 export default function VendorsPage() {
+  const toast = useToast();
   const [items, setItems] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,26 +47,28 @@ export default function VendorsPage() {
         : await apiClient.post(endpoint, form);
       if (!res.ok) {
         const err = await res.json();
-        alert(err.error || 'Failed to save vendor');
+        toast.error(err.error || 'Failed to save vendor');
         return;
       }
       setEditingId(null);
       setForm(emptyForm);
       await fetchItems();
+      toast.success(editingId ? 'Vendor updated successfully' : 'Vendor created successfully');
     } finally {
       setSaving(false);
     }
   };
 
   const onDelete = async (id: number) => {
-    if (!confirm('Delete this vendor?')) return;
+    if (!window.confirm('Delete this vendor?')) return;
     const res = await apiClient.delete(`/api/vendors/${id}`);
     if (!res.ok) {
       const err = await res.json();
-      alert(err.error || 'Failed to delete vendor');
+      toast.error(err.error || 'Failed to delete vendor');
       return;
     }
     await fetchItems();
+    toast.success('Vendor deleted successfully');
   };
 
   return (

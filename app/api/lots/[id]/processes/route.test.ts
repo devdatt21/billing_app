@@ -24,11 +24,50 @@ jest.mock('@/lib/auth-helpers', () => ({
 }));
 
 describe('POST /api/lots/[id]/processes', () => {
+  type LotSummary = {
+    id: number;
+    lotNo?: string;
+    currentWeight: string;
+    accumulatedCost: string;
+    status: string;
+    inventoryState: string;
+    currentStage?: string;
+  };
+  type ProcessTypeSummary = { id: number; stage: string; isActive: boolean };
+  type VendorSummary = { id: number };
+  type CreatedProcess = {
+    id: number;
+    lotId: number;
+    processTypeId: number;
+    vendorId: number | null;
+    status: string;
+    inputWeight: string;
+    outputWeight: string;
+    lossWeight: string;
+    costAmount: string;
+    processDate: Date;
+    processType: { id: number; name: string; stage: string };
+    vendor: null;
+  };
+  type TransactionClient = {
+    lotProcess: {
+      create: jest.MockedFunction<() => Promise<CreatedProcess>>;
+    };
+    lot: {
+      update: jest.MockedFunction<() => Promise<{ id: number; currentWeight: string }>>;
+    };
+    lotCost: {
+      create: jest.MockedFunction<() => Promise<{ id: number }>>;
+    };
+  };
+
   const mockedPrisma = prisma as unknown as {
-    lot: { findUnique: jest.Mock };
-    processType: { findUnique: jest.Mock };
-    vendor: { findUnique: jest.Mock };
-    $transaction: jest.Mock;
+    lot: { findUnique: jest.MockedFunction<() => Promise<LotSummary | null>> };
+    processType: { findUnique: jest.MockedFunction<() => Promise<ProcessTypeSummary | null>> };
+    vendor: { findUnique: jest.MockedFunction<() => Promise<VendorSummary | null>> };
+    $transaction: jest.MockedFunction<
+      <TResult>(callback: (tx: TransactionClient) => Promise<TResult>) => Promise<TResult>
+    >;
   };
 
   const mockedGetUser = getUserFromHeaders as jest.Mock;
@@ -63,9 +102,9 @@ describe('POST /api/lots/[id]/processes', () => {
       isActive: true,
     });
 
-    const tx = {
+    const tx: TransactionClient = {
       lotProcess: {
-        create: jest.fn().mockResolvedValue({
+        create: jest.fn<() => Promise<CreatedProcess>>().mockResolvedValue({
           id: 10,
           lotId: 1,
           processTypeId: 2,
@@ -81,16 +120,14 @@ describe('POST /api/lots/[id]/processes', () => {
         }),
       },
       lot: {
-        update: jest.fn().mockResolvedValue({ id: 1, currentWeight: '9.500' }),
+        update: jest.fn<() => Promise<{ id: number; currentWeight: string }>>().mockResolvedValue({ id: 1, currentWeight: '9.500' }),
       },
       lotCost: {
-        create: jest.fn().mockResolvedValue({ id: 5 }),
+        create: jest.fn<() => Promise<{ id: number }>>().mockResolvedValue({ id: 5 }),
       },
     };
 
-    mockedPrisma.$transaction.mockImplementation(
-      async (callback: (arg0: typeof tx) => Promise<unknown>) => callback(tx)
-    );
+    mockedPrisma.$transaction.mockImplementation(async (callback) => callback(tx));
 
     const res = await POST(makeRequest({
       processTypeId: 2,
