@@ -131,7 +131,7 @@ export default function InvoiceEditorPage() {
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-4 pb-24">
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-4 pb-6">
         {/* Invoice Details */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Invoice Details</h2>
@@ -318,11 +318,10 @@ export default function InvoiceEditorPage() {
             isInterState={seller?.stateCode !== buyer?.stateCode && !!seller?.stateCode && !!buyer?.stateCode}
           />
         </div>
-      </form>
 
-      {/* Sticky Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex gap-3">
+        {/* Sticky Action Bar */}
+        <div className="sticky bottom-0 z-30 border border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm rounded-lg">
+          <div className="px-4 py-3 flex gap-3">
           <button
             type="button"
             onClick={() => router.back()}
@@ -332,14 +331,14 @@ export default function InvoiceEditorPage() {
           </button>
           <button
             type="submit"
-            onClick={handleSubmit}
             disabled={loading}
             className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating...' : 'Create Invoice'}
           </button>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

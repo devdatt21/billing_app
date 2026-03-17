@@ -1,13 +1,41 @@
 'use client';
 
-import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Loader from '@/components/Loader';
 
+const throughputBars = [56, 72, 64, 88, 76, 92, 68];
+const revenueBars = [42, 58, 49, 73, 65, 79, 70, 84];
+const linePath = 'M 0 76 C 40 40, 70 52, 100 34 S 170 18, 220 44 S 300 72, 360 26';
+
+function MetricCard({ title, value, hint }: { title: string; value: string; hint: string }) {
+  return (
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+      <p className="text-sm font-medium text-gray-500">{title}</p>
+      <p className="mt-2 text-2xl sm:text-3xl font-bold text-gray-900">{value}</p>
+      <p className="mt-2 text-sm text-gray-600">{hint}</p>
+    </div>
+  );
+}
+
+function MiniBarChart({ values, color }: { values: number[]; color: string }) {
+  return (
+    <div className="flex h-40 items-end gap-2">
+      {values.map((value, index) => (
+        <div key={`${color}-${index}`} className="flex-1 rounded-t-md bg-gray-100">
+          <div
+            className={`w-full rounded-t-md ${color}`}
+            style={{ height: `${value}%` }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Home() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -26,90 +54,78 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">Billing App</h1>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-sm font-semibold text-gray-900">{user.name}</div>
-              <div className="text-xs text-gray-500">{user.role}</div>
-            </div>
-            <button
-              onClick={logout}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Welcome, {user.name}!
-          </h2>
-        </div>
+        <section className="bg-white rounded-lg shadow-md border border-gray-200 p-6 sm:p-8 mb-6">
+          <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">ERP Dashboard</p>
+          <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-gray-900">Welcome back, {user.name}</h1>
+          <p className="mt-3 max-w-3xl text-sm sm:text-base text-gray-600">
+            This is the ERP landing dashboard. Charts are dummy placeholders for now and will be connected to live purchase, lot,
+            billing, and process data once the ERP modules are fully ready.
+          </p>
+        </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Create Invoice Card */}
-          <Link
-            href="/invoices/create"
-            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-2 border-transparent hover:border-blue-500"
-          >
-            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <MetricCard title="Rough Lots In Process" value="128" hint="Placeholder KPI for live lot workflow tracking." />
+          <MetricCard title="Open Purchase Entries" value="24" hint="Dummy intake volume until purchase analytics are wired." />
+          <MetricCard title="Billing This Week" value="Rs 18.4L" hint="Static billing summary for dashboard layout validation." />
+        </section>
+
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Throughput Trend</h2>
+                <p className="text-sm text-gray-600">Dummy chart for lot movement across stages</p>
+              </div>
+              <span className="text-xs font-medium text-gray-500">Last 7 days</span>
+            </div>
+            <div className="h-44 w-full rounded-lg bg-gradient-to-b from-blue-50 to-white p-3">
+              <svg viewBox="0 0 360 100" className="h-full w-full">
+                <path d={linePath} fill="none" stroke="#2563eb" strokeWidth="4" strokeLinecap="round" />
+                <path d={linePath} fill="none" stroke="#93c5fd" strokeWidth="10" strokeLinecap="round" opacity="0.35" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Create Invoice</h3>
-            <p className="text-gray-600">Create a new invoice with line items and tax calculations</p>
-          </Link>
+          </div>
 
-          {/* View Invoices Card */}
-          <Link
-            href="/invoices"
-            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-2 border-transparent hover:border-green-500"
-          >
-            <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-4">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Stage Output Mix</h2>
+                <p className="text-sm text-gray-600">Dummy chart for process output distribution</p>
+              </div>
+              <span className="text-xs font-medium text-gray-500">Current cycle</span>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">View Invoices</h3>
-            <p className="text-gray-600">Browse and search all invoices</p>
-          </Link>
+            <MiniBarChart values={throughputBars} color="bg-blue-500" />
+          </div>
+        </section>
 
-          {/* Manage Companies Card */}
-          <Link
-            href="/companies"
-            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-2 border-transparent hover:border-purple-500"
-          >
-            <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-4">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+        <section className="grid grid-cols-1 xl:grid-cols-[1.4fr_1fr] gap-6">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Revenue Projection</h2>
+                <p className="text-sm text-gray-600">Placeholder visual for billing and sales forecasting</p>
+              </div>
+              <span className="text-xs font-medium text-gray-500">Projected</span>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Manage Companies</h3>
-            <p className="text-gray-600">Add and manage vendor and buyer companies</p>
-          </Link>
+            <MiniBarChart values={revenueBars} color="bg-emerald-500" />
+          </div>
 
-          {/* Purchase Invoices Card */}
-          <Link
-            href="/purchase-invoices"
-            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-2 border-transparent hover:border-orange-500"
-          >
-            <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg mb-4">
-              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Implementation Notes</h2>
+            <div className="space-y-3 text-sm text-gray-600">
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+                Live KPIs will come from purchases, lots, genealogy, and billing services.
+              </div>
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+                Current visuals are static so we can stabilize layout before binding APIs.
+              </div>
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+                Left navigation remains the primary way to enter each module.
+              </div>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Purchase Invoices</h3>
-            <p className="text-gray-600">Upload and manage purchase bills (PDF/Images) for auditing</p>
-          </Link>
-        </div>
-
-    
+          </div>
+        </section>
       </main>
     </div>
   );

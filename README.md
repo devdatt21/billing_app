@@ -1,421 +1,315 @@
-# Billing App - Mobile-First Invoice Management System
+# Diamond ERP
 
-A production-ready Next.js application for creating, managing, and exporting invoices with precise tax calculations (SGST/CGST), reusable vendor management, and mobile-first responsive design.
+This project is no longer just a billing application. It is now evolving into a lightweight ERP for diamond manufacturers, with the existing billing features preserved and moved under the `/billing_app` route.
 
-## 🚀 Features
+The goal is not to build a huge ERP upfront. The goal is to solve a small set of painful daily factory problems extremely well:
 
-- **Mobile-First Design**: Optimized for 360-430px widths with big tappable inputs and sticky action bars
-- **Precise Tax Calculations**: Deterministic SGST/CGST calculations using Decimal.js with configurable rounding
-- **Professional PDF Export**: Generate invoices as PDFs matching exact sample layout using Puppeteer
-- **Reusable Vendor Database**: Search and reuse company information with fuzzy search and typeahead
-- **Real-Time Calculations**: Live invoice totals with automatic amount-to-words conversion
-- **PostgreSQL + Prisma**: Robust relational database with type-safe ORM
-- **TypeScript**: Full type safety across frontend and backend
-- **API Routes**: RESTful API built with Next.js route handlers
+1. Lot tracking confusion
+2. Weight mismatch
+3. Cost and profit calculation
+4. Vendor job tracking
+5. Payment dues
 
-## 📋 Requirements
+This README is the working source of truth for the project direction. Future features and schema changes should be aligned with this document unless we explicitly revise it.
 
-- Node.js 20+ (LTS recommended)
-- PostgreSQL 15+
-- npm or pnpm
+## Product Direction
 
-## 🛠️ Quick Start
+We are building a lightweight ERP for diamond manufacturers in markets like Surat, Bhavnagar, and Mumbai.
 
-### 1. Clone and Install Dependencies
+The product should stay:
 
-```bash
-cd billing_app
-npm install
+- simple enough that users do not return to Excel
+- fast enough for hundreds of entries per day
+- accurate enough that owners trust the weight and cost numbers every time
+
+## Current Transition
+
+The codebase already contains billing and invoice functionality. That functionality should continue to exist, but it should now live under the `/billing_app` route namespace.
+
+Current direction:
+
+- existing billing app features are treated as one module inside the larger ERP
+- diamond manufacturing workflows become the primary product direction
+- README, schema, routes, APIs, and UI should gradually be updated to reflect this change
+
+## Route Strategy
+
+The billing module should be migrated so that its screens and related flows start with:
+
+```txt
+/billing_app
 ```
 
-### 2. Setup PostgreSQL Database
+Examples:
 
-**Option A: Using Docker (Recommended)**
-
-```bash
-# Start PostgreSQL container
-docker-compose up -d
-
-# Verify container is running
-docker ps
+```txt
+/billing_app
+/billing_app/invoices
+/billing_app/invoices/create
+/billing_app/companies
 ```
 
-**Option B: Local PostgreSQL**
+This keeps the old billing capability available while making room for ERP modules such as purchases, lots, processes, inventory, vendors, sales, and payments.
 
-Install PostgreSQL and create a database:
+## Core ERP Scope
 
-```sql
-CREATE DATABASE billing_app;
+The minimum ERP that can survive in the market should support these areas:
+
+1. Lot creation
+2. Lot splitting
+3. Process tracking
+4. Weight ledger
+5. Cost tracking
+6. Vendor job tracking
+7. Inventory
+8. Selling
+9. Dashboard
+10. Reports
+
+## Business Workflows We Must Support
+
+### 1. Lot Tracking
+
+Every manufacturing flow revolves around lots or packets.
+
+The system must support:
+
+- create lot
+- split lot
+- merge lots
+- track parent-child lot genealogy
+- track current weight
+- track current location
+- track current status
+
+Example:
+
+```txt
+Lot L1 (10 ct)
+|- L1A (3 ct)
+|- L1B (2 ct)
+`- L1C (1 ct)
 ```
 
-### 3. Configure Environment
+### 2. Process Tracking
 
-```bash
-# Copy example environment file
-cp .env.example .env
+Minimum stages for now:
 
-# Edit .env and update DATABASE_URL if needed
-# Default: postgresql://postgres:postgres@localhost:5432/billing_app?schema=public
+- Cutting
+- Sarin / Measurement
+- Polishing
+- Ready Inventory
+- Sold
+
+Each process event should record:
+
+- input weight
+- output weight
+- loss
+- cost
+- vendor
+- date
+
+### 3. Weight Ledger
+
+The system must always answer:
+
+```txt
+Where is the weight?
 ```
 
-### 4. Run Database Migrations
+At a business level, the reconciliation rule is:
 
-```bash
-# Generate Prisma Client
-npx prisma generate
-
-# Run migrations
-npm run db:migrate
-
-# Seed with sample data (from PDF invoice)
-npm run db:seed
+```txt
+Total purchased weight
+= current inventory
++ sold weight
++ waste / loss
 ```
 
-### 5. Start Development Server
+If this does not reconcile, trust in the software drops immediately.
 
-```bash
-npm run dev
+### 4. Cost Tracking
+
+Each lot should accumulate costs over time, including:
+
+- purchase cost
+- cutting cost
+- sarin cost
+- polishing cost
+- misc cost
+
+When a lot or its child lots are sold, revenue and profit should be computed automatically.
+
+### 5. Vendor Job Management
+
+We need to track outsourced work clearly:
+
+- which vendor has which lot
+- when the lot was sent
+- expected return date
+- actual return date
+- piece count
+- cost basis such as per piece or per carat
+
+### 6. Inventory
+
+The ERP should show:
+
+- ready lots
+- total weight
+- location
+- valuation / cost
+- sale readiness
+
+### 7. Sales
+
+Sales should record:
+
+- customer
+- lot
+- weight
+- price per carat
+- total amount
+- date
+
+Profit should be automatic from accumulated cost versus sale value.
+
+### 8. Dashboard
+
+Owners should get a one-screen summary of:
+
+- total rough purchased
+- total polished output
+- inventory value
+- total profit
+- lots in process
+- pending dues
+
+### 9. Payments and Dues
+
+We need visibility into:
+
+- supplier dues
+- vendor dues
+- customer receivables
+
+### 10. Reports
+
+Minimum report set:
+
+- lot history report
+- weight reconciliation report
+- profit per lot
+- vendor job report
+- inventory report
+
+## Differentiator
+
+One feature we should treat as strategically important:
+
+```txt
+Lot genealogy visualizer
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Example:
 
-## 📁 Project Structure
-
-```
-billing_app/
-├── app/                      # Next.js app router
-│   ├── api/                  # API route handlers
-│   │   ├── companies/        # Company CRUD endpoints
-│   │   ├── invoices/         # Invoice CRUD endpoints
-│   │   └── search/           # Search endpoints
-│   ├── invoices/
-│   │   └── create/           # Invoice creation page
-│   ├── globals.css           # Global styles
-│   ├── layout.tsx            # Root layout
-│   └── page.tsx              # Homepage
-├── components/               # React components
-│   ├── CompanySelect.tsx     # Searchable company dropdown
-│   ├── InvoiceLineEditor.tsx # Line item editor
-│   └── InvoiceSummary.tsx    # Invoice total summary
-├── lib/                      # Shared libraries
-│   ├── prisma.ts             # Prisma client instance
-│   └── validations.ts        # Zod schemas
-├── prisma/                   # Prisma ORM
-│   ├── schema.prisma         # Database schema
-│   └── seed.ts               # Seed data (from PDF)
-├── utils/                    # Utility functions
-│   ├── calcTax.ts            # Tax calculation engine
-│   ├── calcTax.test.ts       # Tax calculation tests
-│   └── formatting.ts         # Number/currency formatting
-├── docker-compose.yml        # PostgreSQL container
-├── Dockerfile                # App containerization
-└── package.json              # Dependencies
+```txt
+L1
+|- L1A
+|  |- L1A1
+|  `- L1A2
+`- L1B
 ```
 
-## 🧪 Testing
+This should make it easy to see where every finished piece or child lot came from.
 
-Run unit tests for tax calculations:
+## Tentative Database Direction
 
-```bash
-npm test
-```
+These are the tables currently proposed for the ERP side:
 
-Run tests in watch mode:
+- `purchases`
+- `suppliers`
+- `lots`
+- `lot_splits`
+- `process_types`
+- `lot_processes`
+- `vendors`
+- `lot_costs`
+- `inventory`
+- `customers`
+- `sales`
+- `sale_items`
+- `payments`
 
-```bash
-npm run test:watch
-```
+This list is tentative and can be modified as we refine the schema.
 
-### Tax Calculation Tests
+## Suggested Meaning of the Tentative Tables
 
-The `calcTax.test.ts` file includes comprehensive tests for:
-- HALF_UP rounding (default)
-- TRUNCATE rounding
-- Edge cases with small amounts
-- Multiple line items
-- Sample invoice values from the PDF
+### Master and party tables
 
-## 🔧 Configuration
+- `suppliers`: rough diamond suppliers and purchase parties
+- `vendors`: job-work vendors such as cutting, sarin, polishing, labs
+- `customers`: buyers of polished diamonds or lots
+- `process_types`: configurable manufacturing stages
 
-### Tax Rounding Mode
+### Transaction and manufacturing tables
 
-Configure the default tax rounding mode in `.env`:
+- `purchases`: purchase entries for incoming rough lots
+- `lots`: core lot master with weight, status, location, parent linkage if needed
+- `lot_splits`: history of split and merge operations
+- `lot_processes`: stage-level movement and production events
+- `lot_costs`: accumulated cost entries against lots
+- `inventory`: ready or in-process inventory snapshots / balances
+- `sales`: sales header
+- `sale_items`: sale line items linked to lots
+- `payments`: money movement for suppliers, vendors, and customers
 
-```env
-# Options: HALF_UP (default), TRUNCATE
-TAX_ROUNDING_MODE=HALF_UP
-```
+## Current Schema Status
 
-**HALF_UP**: Rounds to nearest even (banker's rounding) - most accurate for financial calculations  
-**TRUNCATE**: Always rounds down - use if required by local regulations
+The current Prisma schema still reflects the old billing-first application and includes models like:
 
-### Database Connection
+- `Company`
+- `Invoice`
+- `InvoiceLine`
+- `Product`
+- `PurchaseInvoice`
+- `User`
 
-Update `DATABASE_URL` in `.env` to change database connection:
+This is acceptable as an intermediate state, but it is not the target ERP schema.
 
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
-```
+## Implementation Principles
 
-## 📊 Database Schema
+While building features, we should keep following these rules:
 
-### Core Models
+1. Weight accuracy is more important than UI polish.
+2. Lot genealogy must never be lost.
+3. Cost accumulation should be automatic wherever possible.
+4. Billing should remain usable while the ERP grows around it.
+5. We should prefer simple workflows over heavy enterprise complexity.
+6. Bulk entry, speed, and keyboard-friendly flows will matter a lot.
 
-**Company** - Vendors and buyers
-- name, gstin, phone
-- addressLine1, addressLine2, city, state, stateCode
-- bankName, bankAccount, ifsc
+## Near-Term Execution Plan
 
-**Invoice** - Invoice headers
-- invoiceNo (unique), date
-- sellerId, buyerId (foreign keys to Company)
-- subtotal, sgstRate, cgstRate
-- sgstAmount, cgstAmount, totalTax
-- rounding, totalAmount, amountInWords
+The current sequence of work should be:
 
-**InvoiceLine** - Invoice line items
-- invoiceId (foreign key)
-- description, hsn, qty, unit, rate, amount
+1. Move or mirror the existing billing flows under `/billing_app`.
+2. Redefine navigation so billing becomes one ERP module.
+3. Refactor the Prisma schema toward the diamond ERP domain.
+4. Build the lot, process, weight, and cost foundation first.
+5. Add inventory, sales, payments, dashboard, and reporting on top of that foundation.
 
-**User** - User accounts (for future auth)
+## What This README Is For
 
-## 🔌 API Endpoints
+This file is the shared alignment document for the project. While implementing features, route changes, schema migrations, or UI changes, we should keep checking against this README so the product direction stays consistent.
 
-### Invoices
+## Open Decisions To Resolve Next
 
-```
-POST   /api/invoices          Create new invoice
-GET    /api/invoices          List invoices (paginated)
-GET    /api/invoices/[id]     Get invoice by ID
-GET    /api/invoices/[id]/pdf Generate and download invoice PDF
-```
+These are still not finalized and will need discussion:
 
-### Companies
+- whether `inventory` should be a computed view or a physical table
+- whether lot genealogy should live directly in `lots` or be fully event-driven
+- whether merges should be supported in v1 or only splits
+- whether sales happen at lot level, piece level, or both
+- whether payments should be generic or separated by party type
 
-```
-POST   /api/companies         Create new company
-GET    /api/companies         List companies (paginated)
-```
-
-### Search
-
-```
-GET    /api/search/companies?q=...  Fuzzy search companies
-```
-
-## 🎨 UI Components
-
-### CompanySelect
-
-Mobile-friendly dropdown with:
-- Server-side fuzzy search
-- 300ms debouncing
-- Keyboard navigation (Arrow keys, Enter, Escape)
-- Recent/most-used items first
-- Displays GSTIN, city, phone in each row
-
-**Props:**
-```typescript
-value: Company | null
-onChange: (company: Company | null) => void
-label: string
-placeholder?: string
-roleFilter?: 'seller' | 'buyer'
-debounceMs?: number (default: 300)
-required?: boolean
-```
-
-### InvoiceLineEditor
-
-Inline editing of line items with:
-- Add/remove/reorder lines
-- Automatic amount calculation (qty × rate)
-- Validation for negative values
-- Mobile-optimized inputs
-
-### InvoiceSummary
-
-Displays:
-- Subtotal
-- SGST/CGST amounts with rates
-- Total tax
-- Rounding adjustment (if non-zero)
-- Final total (large, bold)
-- Amount in words
-
-## 📱 Mobile Optimizations
-
-- Single-column responsive layout
-- 16px minimum font size (prevents iOS zoom)
-- Big tappable inputs (min 44px touch target)
-- Sticky action bar at bottom
-- Debounced search inputs
-- Optimized for 360-430px widths
-
-## 🎯 Tax Calculation Logic
-
-### Example from Sample Invoice
-
-**Input:**
-- Taxable Value: ₹389,486.22
-- SGST Rate: 0.75%
-- CGST Rate: 0.75%
-
-**Calculation (HALF_UP):**
-```
-SGST: 389486.22 × 0.0075 = 2921.14665 → 2921.15
-CGST: 389486.22 × 0.0075 = 2921.14665 → 2921.15
-Total Tax: 2921.15 + 2921.15 = 5842.30
-Total: 389486.22 + 5842.30 = 395328.52
-```
-
-### Why Decimal.js?
-
-JavaScript's native `Number` type uses floating-point arithmetic which can cause precision errors:
-
-```javascript
-0.1 + 0.2 === 0.3  // false! (0.30000000000000004)
-```
-
-Decimal.js provides deterministic, exact decimal arithmetic for financial calculations.
-
-## � PDF Generation
-
-The app generates professional PDF invoices matching the exact layout of the sample invoice. See [PDF_GENERATION.md](./PDF_GENERATION.md) for detailed documentation.
-
-**Quick Usage:**
-1. Navigate to any invoice detail page
-2. Click the green "PDF" button
-3. PDF will be automatically downloaded
-
-**Features:**
-- Exact layout matching sample invoice
-- Indian currency formatting
-- Company logos and bank details
-- Tax breakdown and amount in words
-- Server-side generation with Puppeteer
-
-## �🚢 Deployment
-
-### Build for Production
-
-```bash
-npm run build
-npm start
-```
-
-### Docker Deployment
-
-```bash
-# Build image
-docker build -t billing-app .
-
-# Run with docker-compose
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
-```
-
-### Environment Variables for Production
-
-```env
-DATABASE_URL="postgresql://..."
-TAX_ROUNDING_MODE=HALF_UP
-NODE_ENV=production
-```
-
-## 📝 Database Management
-
-```bash
-# Open Prisma Studio (GUI)
-npm run db:studio
-
-# Create new migration
-npm run db:migrate
-
-# Deploy migrations (production)
-npm run db:deploy
-
-# Reset database (WARNING: deletes all data)
-npx prisma migrate reset
-```
-
-## 🔍 Troubleshooting
-
-### TypeScript/Lint Errors During Development
-
-The errors you see are normal during initial setup before running `npm install`. After installing dependencies, all imports will resolve correctly.
-
-### Database Connection Issues
-
-1. Ensure PostgreSQL is running:
-   ```bash
-   docker ps  # Check if postgres container is up
-   ```
-
-2. Test connection:
-   ```bash
-   npx prisma db push
-   ```
-
-3. Check `.env` DATABASE_URL format
-
-### Migration Issues
-
-If migrations fail, try:
-```bash
-npx prisma migrate reset  # WARNING: deletes data
-npx prisma migrate dev
-```
-
-## 🎓 Architecture Decisions
-
-### 1. Mobile-First Approach
-**Why:** Primary use case is field data entry on mobile devices  
-**Trade-off:** Desktop UI could be more space-efficient
-
-### 2. Server-Side Tax Calculation
-**Why:** Single source of truth, prevents client tampering  
-**Trade-off:** Requires API call, but cached results mitigate latency
-
-### 3. Decimal.js for Arithmetic
-**Why:** Financial calculations require exact decimal precision  
-**Trade-off:** Slightly larger bundle (~30KB), but critical for accuracy
-
-### 4. Prisma ORM
-**Why:** Type-safe database access, excellent DX, migration management  
-**Trade-off:** Adds abstraction layer, but significantly reduces bugs
-
-### 5. PostgreSQL for All Data
-**Why:** Relational data model, ACID compliance, excellent search with pg_trgm  
-**Trade-off:** Could use MongoDB for attachments, but KISS principle applied
-
-## 📚 Additional Resources
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [Decimal.js Documentation](https://mikemcl.github.io/decimal.js/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- Sample invoice data from `Sp-25-26-11.pdf`
-- Built with Next.js 14 App Router
-- Styled with Tailwind CSS
-- Database powered by PostgreSQL + Prisma
-
----
-
-**Need Help?** Open an issue or check the troubleshooting section above.
-
-**Happy Invoicing! 📄✨**
