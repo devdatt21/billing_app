@@ -49,6 +49,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Process record not found' }, { status: 404 });
     }
 
+    const existingDates = existing as { processStartDate?: Date | null; processEndDate?: Date | null };
+
     if (existing.status !== 'IN_PROGRESS') {
       return NextResponse.json({ error: 'Only IN_PROGRESS process can be edited' }, { status: 422 });
     }
@@ -131,10 +133,22 @@ export async function PUT(
       if (!vendor) return NextResponse.json({ error: 'Vendor not found' }, { status: 400 });
     }
 
-    const processDate = body.processDate ? new Date(body.processDate) : existing.processDate;
-    if (isNaN(processDate.getTime())) {
-      return NextResponse.json({ error: 'Invalid processDate' }, { status: 400 });
+    const processStartDate = body.processStartDate ? new Date(body.processStartDate) : (existingDates.processStartDate ?? existing.processDate);
+    if (!processStartDate || isNaN(processStartDate.getTime())) {
+      return NextResponse.json({ error: 'processStartDate is required and must be valid' }, { status: 400 });
     }
+
+    const processDate = processStartDate;
+
+    const processEndDate = body.processEndDate ? new Date(body.processEndDate) : (existingDates.processEndDate ?? null);
+    if (body.processEndDate && (!processEndDate || isNaN(processEndDate.getTime()))) {
+      return NextResponse.json({ error: 'Invalid processEndDate' }, { status: 400 });
+    }
+
+    // Auto-complete if processEndDate is in past or today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const processStatus = processEndDate && new Date(processEndDate) <= today ? 'COMPLETED' : existing.status;
 
     const result = await prisma.$transaction(async (tx) => {
       const updatedProcess = await tx.lotProcess.update({
@@ -147,6 +161,9 @@ export async function PUT(
           lossWeight: inputWeight.minus(outputWeight),
           costAmount,
           processDate,
+          processStartDate,
+          processEndDate,
+          status: processStatus,
           remarks: body.remarks?.trim() ?? existing.remarks,
           updatedBy: user?.userId || null,
         },

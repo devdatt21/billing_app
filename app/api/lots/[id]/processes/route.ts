@@ -155,10 +155,12 @@ export async function POST(
       if (!vendor) return NextResponse.json({ error: 'Vendor not found' }, { status: 400 });
     }
 
-    const processDate = body.processDate ? new Date(body.processDate) : new Date();
-    if (isNaN(processDate.getTime())) {
-      return NextResponse.json({ error: 'Invalid processDate' }, { status: 400 });
+    const processStartDate = body.processStartDate ? new Date(body.processStartDate) : null;
+    if (!processStartDate || isNaN(processStartDate.getTime())) {
+      return NextResponse.json({ error: 'processStartDate is required and must be valid' }, { status: 400 });
     }
+
+    const processDate = processStartDate;
 
     // Do not allow process date before latest lot activity date (process/split timeline consistency)
     const [lastProcess, lastSplitOut, lastSplitIn] = await Promise.all([
@@ -190,7 +192,7 @@ export async function POST(
     if (latestActivityDate && dateOnlyValue(processDate) < dateOnlyValue(latestActivityDate)) {
       return NextResponse.json(
         {
-          error: `Process date cannot be earlier than last activity date (${latestActivityDate.toISOString().slice(0, 10)})`,
+          error: `Start date cannot be earlier than last activity date (${latestActivityDate.toISOString().slice(0, 10)})`,
         },
         { status: 422 }
       );
@@ -201,7 +203,17 @@ export async function POST(
       return NextResponse.json({ error: 'costAmount cannot be negative' }, { status: 400 });
     }
 
+    const processEndDate = body.processEndDate ? new Date(body.processEndDate) : null;
+    if (body.processEndDate && isNaN((processEndDate as Date).getTime())) {
+      return NextResponse.json({ error: 'Invalid processEndDate' }, { status: 400 });
+    }
+
     const isExternalVendor = vendorId !== null;
+
+    // Auto-complete if processEndDate is in past or today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const processStatus = processEndDate && new Date(processEndDate) <= today ? 'COMPLETED' : 'IN_PROGRESS';
 
     const result = await prisma.$transaction(async (tx) => {
       const process = await tx.lotProcess.create({
@@ -209,11 +221,13 @@ export async function POST(
           lotId,
           processTypeId,
           vendorId,
-          status: 'IN_PROGRESS',
+          status: processStatus,
           inputWeight,
           outputWeight,
           lossWeight,
           processDate,
+          processStartDate,
+          processEndDate,
           costAmount,
           sentToVendorAt: isExternalVendor ? new Date() : null,
           remarks: body.remarks?.trim() || null,

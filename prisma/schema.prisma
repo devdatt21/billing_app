@@ -450,6 +450,8 @@ model LotProcess {
   outputWeight     Decimal       @db.Decimal(18, 3)
   lossWeight       Decimal       @db.Decimal(18, 3)
   processDate      DateTime
+  processStartDate DateTime?
+  processEndDate   DateTime?
   sentToVendorAt   DateTime?
   expectedReturnAt DateTime?
   returnedAt       DateTime?

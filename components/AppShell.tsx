@@ -185,11 +185,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="border-b border-gray-200 bg-gradient-to-br from-white via-blue-50 to-cyan-50 px-3 py-3">
             <div className="mb-2 flex items-center justify-between gap-2">
               {!isCollapsed || isMobile ? (
-                <h2 className="text-lg font-bold text-gray-900">Diamond ERP</h2>
+                <Link
+                  href="/"
+                  className="text-lg font-bold text-gray-900 hover:text-blue-700"
+                  onClick={() => {
+                    if (isMobile) {
+                      setMobileNavOpen(false);
+                    }
+                  }}
+                >
+                  Diamond ERP
+                </Link>
               ) : (
-                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
+                <Link
+                  href="/"
+                  className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
+                  aria-label="Go to home"
+                >
                   DE
-                </div>
+                </Link>
               )}
               {isMobile ? (
                 <button
@@ -352,7 +366,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="min-w-0 flex-1">
+      <div className={`min-w-0 flex-1 ${isMobile && !mobileNavOpen ? 'pb-24' : ''}`}>
         {isMobile && !mobileNavOpen ? (
           <button
             type="button"

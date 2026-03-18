@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
@@ -61,6 +61,8 @@ interface SplitAsChildEntry {
 interface LotProcess {
   id: number;
   processDate: string;
+  processStartDate?: string | null;
+  processEndDate?: string | null;
   status: string;
   inputWeight: string;
   outputWeight: string;
@@ -121,6 +123,8 @@ function formatDate(value: string): string {
 export default function LotDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const toast = useToast();
+  const editFormRef = useRef<HTMLFormElement>(null);
+  const [isMobileView, setIsMobileView] = useState(false);
   const [lot, setLot] = useState<LotDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +143,8 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const [procOutputWeight, setProcOutputWeight] = useState('');
   const [procCostAmount, setProcCostAmount] = useState('');
   const [procDate, setProcDate] = useState('');
+  const [procStartDate, setProcStartDate] = useState('');
+  const [procEndDate, setProcEndDate] = useState('');
   const [procRemarks, setProcRemarks] = useState('');
   const [editingProcessId, setEditingProcessId] = useState<number | null>(null);
   const [procSaving, setProcSaving] = useState(false);
@@ -163,6 +169,14 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     loadLot();
   }, [loadLot]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 1279px)');
+    setIsMobileView(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobileView(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
   const splitTotal = useMemo(
     () => splitWeights.reduce((sum, item) => sum + Number(item || 0), 0),
     [splitWeights]
@@ -171,7 +185,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const timeline = useMemo<TimelineEvent[]>(() => {
     if (!lot) return [];
     const events: TimelineEvent[] = [
-      ...lot.processes.map((p) => ({ kind: 'process' as const, date: p.processDate, data: p })),
+      ...lot.processes.map((p) => ({ kind: 'process' as const, date: p.processStartDate || p.processDate, data: p })),
       ...lot.splitAsSource.map((s) => ({ kind: 'split-out' as const, date: s.splitDate, data: s })),
       ...lot.splitAsChild.map((s) => ({ kind: 'split-in' as const, date: s.splitDate, data: s })),
     ];
@@ -181,7 +195,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const minProcessDate = useMemo(() => {
     if (!lot) return '';
     const allDates = [
-      ...lot.processes.map((p) => p.processDate),
+      ...lot.processes.map((p) => p.processStartDate || p.processDate),
       ...lot.splitAsSource.map((s) => s.splitDate),
       ...lot.splitAsChild.map((s) => s.splitDate),
     ]
@@ -249,7 +263,15 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     setProcOutputWeight(process.outputWeight);
     setProcCostAmount(process.costAmount);
     setProcDate(new Date(process.processDate).toISOString().slice(0, 10));
+    setProcStartDate(process.processStartDate ? new Date(process.processStartDate).toISOString().slice(0, 10) : '');
+    setProcEndDate(process.processEndDate ? new Date(process.processEndDate).toISOString().slice(0, 10) : '');
     setProcRemarks(process.remarks || '');
+    
+    if (isMobileView && editFormRef.current) {
+      setTimeout(() => {
+        editFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 0);
+    }
   };
 
   const resetProcessForm = () => {
@@ -262,18 +284,17 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     setProcOutputWeight('');
     setProcCostAmount('');
     setProcDate('');
+    setProcStartDate('');
+    setProcEndDate('');
     setProcRemarks('');
   };
 
   const submitProcess = async (e: FormEvent) => {
     e.preventDefault();
-    if (!lot || !processTypeId) return;
+    if (!lot || !processTypeId || !procStartDate) return;
 
-    const defaultDate = new Date().toISOString().split('T')[0];
-    const effectiveProcessDate = procDate || minProcessDate || defaultDate;
-
-    if (minProcessDate && effectiveProcessDate < minProcessDate) {
-      toast.warning(`Process date cannot be earlier than ${minProcessDate}`);
+    if (minProcessDate && procStartDate < minProcessDate) {
+      toast.warning(`Start date cannot be earlier than ${minProcessDate}`);
       return;
     }
 
@@ -285,7 +306,9 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
         inputWeight: procInputWeight,
         outputWeight: procOutputWeight,
         costAmount: procCostAmount || '0',
-        processDate: effectiveProcessDate,
+        processDate: procStartDate,
+        processStartDate: procStartDate || null,
+        processEndDate: procEndDate || null,
         remarks: procRemarks,
       };
 
@@ -432,7 +455,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900 mb-2">Activity Timeline</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">Process Timeline</h2>
             {timeline.length === 0 ? (
               <p className="text-gray-600 text-sm">No activity recorded yet.</p>
             ) : (
@@ -443,13 +466,27 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                     const dotColor = p.processType?.color || '#10b981';
                     return (
                       <li key={`proc-${p.id}`} className="relative">
-                        <span className="absolute -left-[1.3rem] top-1 w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: dotColor }} />
+                        <span className="absolute -left-[1.3rem] top-0 w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: dotColor }} />
                         <p className="text-xs text-gray-500">{formatDate(p.processDate)}</p>
                         <p className="text-sm font-semibold text-gray-900">
                           {p.processType?.name ?? 'Process'}
                           <span className="ml-2 text-xs font-normal text-gray-500">{p.processType?.stage}</span>
                         </p>
                         {p.vendor && <p className="text-xs text-gray-600">Vendor: {p.vendor.name}</p>}
+                        {(p.processStartDate || p.processEndDate) && (
+                          <div className="text-xs text-gray-600 space-y-1">
+                            <p>
+                              {p.processStartDate && `Start: ${formatDate(p.processStartDate)}`}
+                              {p.processStartDate && p.processEndDate && ' → '}
+                              {p.processEndDate && `End: ${formatDate(p.processEndDate)}`}
+                            </p>
+                            {p.processStartDate && p.processEndDate && (
+                              <p className="text-blue-600 font-semibold">
+                                Duration: {Math.ceil((new Date(p.processEndDate).getTime() - new Date(p.processStartDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                              </p>
+                            )}
+                          </div>
+                        )}
                         <p className="text-xs text-gray-600">
                           In: {formatNumber(p.inputWeight)} cts → Out: {formatNumber(p.outputWeight)} cts
                           {Number(p.lossWeight) !== 0 && (
@@ -464,13 +501,19 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                             p.status === 'COMPLETED' ? 'bg-green-600' :
                             p.status === 'IN_PROGRESS' ? 'bg-blue-600' : 'bg-gray-400'
                           }`}>{p.status}</span>
+                          {p.status === 'COMPLETED' && p.processEndDate && (
+                            <span className="text-green-600 text-[10px] font-semibold">Auto-completed</span>
+                          )}
                           {p.status === 'IN_PROGRESS' ? (
                             <button
                               type="button"
                               onClick={() => startEditProcess(p)}
-                              className="text-[11px] text-blue-600 hover:underline"
+                              className="inline-flex items-center justify-center w-5 h-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                              title="Edit process"
                             >
-                              Edit
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
                             </button>
                           ) : null}
                         </p>
@@ -482,7 +525,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                     const s = event.data as SplitAsSourceEntry;
                     return (
                       <li key={`sout-${s.id}`} className="relative">
-                        <span className="absolute -left-[1.3rem] top-1 w-3 h-3 rounded-full bg-orange-400 border-2 border-white" />
+                        <span className="absolute -left-[1.3rem] top-0 w-3 h-3 rounded-full bg-orange-400 border-2 border-white" />
                         <p className="text-xs text-gray-500">{formatDate(s.splitDate)}</p>
                         <p className="text-sm font-semibold text-gray-900">Split Out</p>
                         <p className="text-xs text-gray-600">
@@ -499,7 +542,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                   const s = event.data as SplitAsChildEntry;
                   return (
                     <li key={`sin-${s.id}`} className="relative">
-                      <span className="absolute -left-[1.3rem] top-1 w-3 h-3 rounded-full bg-sky-500 border-2 border-white" />
+                      <span className="absolute -left-[1.3rem] top-0 w-3 h-3 rounded-full bg-sky-500 border-2 border-white" />
                       <p className="text-xs text-gray-500">{formatDate(s.splitDate)}</p>
                       <p className="text-sm font-semibold text-gray-900">Received From Split</p>
                       <p className="text-xs text-gray-600">
@@ -541,7 +584,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           </div>
         </section>
 
-        <form onSubmit={submitProcess} className="bg-white border border-gray-200 rounded-lg p-5 h-fit space-y-3">
+        <form ref={editFormRef} onSubmit={submitProcess} className="bg-white border border-gray-200 rounded-lg p-5 h-fit space-y-3">
           <h2 className="font-semibold text-gray-900">{editingProcessId ? 'Edit Process' : 'Record Process'}</h2>
           <p className="text-sm text-gray-600">Updates lot weight and stage on save.</p>
 
@@ -618,14 +661,33 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             </p>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Process Date</label>
-            <input type="date" value={procDate} onChange={(e) => setProcDate(e.target.value)}
-              min={minProcessDate || undefined}
-              className="w-full px-3 py-2 border rounded text-sm" />
-            {minProcessDate ? (
-              <p className="mt-1 text-xs text-gray-500">Must be on or after {minProcessDate}</p>
-            ) : null}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
+              <input type="date" value={procStartDate} onChange={(e) => setProcStartDate(e.target.value)}
+                min={minProcessDate || undefined}
+                className="w-full px-3 py-2 border rounded text-sm" required />
+              {minProcessDate ? (
+                <p className="mt-1 text-xs text-gray-500">On or after {minProcessDate}</p>
+              ) : null}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">End Date (optional)</label>
+              <input type="date" value={procEndDate} onChange={(e) => setProcEndDate(e.target.value)}
+                className="w-full px-3 py-2 border rounded text-sm" />
+              {procEndDate && (
+                (() => {
+                  const endDate = new Date(procEndDate);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (endDate <= today) {
+                    return <p className="mt-1 text-xs text-green-600 font-semibold">✓ Will auto-complete</p>;
+                  } else {
+                    return <p className="mt-1 text-xs text-blue-600">Auto-completes on date</p>;
+                  }
+                })()
+              )}
+            </div>
           </div>
 
           <div>
@@ -644,7 +706,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           <div className="flex gap-2">
             <button
               type="submit"
-              disabled={procSaving || !processTypeId}
+              disabled={procSaving || !processTypeId || !procStartDate}
               className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
             >
               {procSaving ? 'Saving…' : editingProcessId ? 'Update Process' : 'Record Process'}
