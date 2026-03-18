@@ -183,7 +183,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       >
         <div className="flex h-full flex-col">
           <div className="border-b border-gray-200 bg-gradient-to-br from-white via-blue-50 to-cyan-50 px-3 py-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2">
               {!isCollapsed || isMobile ? (
                 <Link
                   href="/"
@@ -234,7 +234,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </button>
               )}
             </div>
-            {!isCollapsed || isMobile ? <p className="text-xs text-gray-500">Module Navigation</p> : null}
           </div>
 
           <nav className="flex-1 space-y-2 overflow-y-auto p-3" aria-label="Main navigation">
