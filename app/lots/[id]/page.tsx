@@ -120,6 +120,8 @@ function formatDate(value: string): string {
   });
 }
 
+const timelineDotClass = 'absolute left-[-1rem] top-1 block h-3 w-3 -translate-x-1/2 rounded-full border-2 border-white box-border';
+
 export default function LotDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const toast = useToast();
@@ -216,7 +218,13 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   }, []);
 
   useEffect(() => {
-    if (vSearch.length < 1) { setVOptions([]); return; }
+    apiClient.get('/api/search/vendors?limit=5')
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setVOptions(Array.isArray(data) ? data : []));
+  }, []);
+
+  useEffect(() => {
+    if (vSearch.length < 1) return;
     apiClient.get(`/api/search/vendors?q=${encodeURIComponent(vSearch)}`)
       .then((r) => r.ok ? r.json() : [])
       .then((data) => setVOptions(Array.isArray(data) ? data : []));
@@ -463,7 +471,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                     const dotColor = p.processType?.color || '#10b981';
                     return (
                       <li key={`proc-${p.id}`} className="relative">
-                        <span className="absolute -left-[1.3rem] top-0 w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: dotColor }} />
+                        <span className={timelineDotClass} style={{ backgroundColor: dotColor }} />
                         <p className="text-xs text-gray-500">{formatDate(p.processDate)}</p>
                         <p className="text-sm font-semibold text-gray-900">
                           {p.processType?.name ?? 'Process'}
@@ -522,7 +530,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                     const s = event.data as SplitAsSourceEntry;
                     return (
                       <li key={`sout-${s.id}`} className="relative">
-                        <span className="absolute -left-[1.3rem] top-0 w-3 h-3 rounded-full bg-orange-400 border-2 border-white" />
+                        <span className={`${timelineDotClass} bg-orange-400`} />
                         <p className="text-xs text-gray-500">{formatDate(s.splitDate)}</p>
                         <p className="text-sm font-semibold text-gray-900">Split Out</p>
                         <p className="text-xs text-gray-600">
@@ -539,7 +547,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                   const s = event.data as SplitAsChildEntry;
                   return (
                     <li key={`sin-${s.id}`} className="relative">
-                      <span className="absolute -left-[1.3rem] top-0 w-3 h-3 rounded-full bg-sky-500 border-2 border-white" />
+                      <span className={`${timelineDotClass} bg-sky-500`} />
                       <p className="text-xs text-gray-500">{formatDate(s.splitDate)}</p>
                       <p className="text-sm font-semibold text-gray-900">Received From Split</p>
                       <p className="text-xs text-gray-600">
