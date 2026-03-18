@@ -142,7 +142,6 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const [procInputWeight, setProcInputWeight] = useState('');
   const [procOutputWeight, setProcOutputWeight] = useState('');
   const [procCostAmount, setProcCostAmount] = useState('');
-  const [procDate, setProcDate] = useState('');
   const [procStartDate, setProcStartDate] = useState('');
   const [procEndDate, setProcEndDate] = useState('');
   const [procRemarks, setProcRemarks] = useState('');
@@ -262,7 +261,6 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     setProcInputWeight(process.inputWeight);
     setProcOutputWeight(process.outputWeight);
     setProcCostAmount(process.costAmount);
-    setProcDate(new Date(process.processDate).toISOString().slice(0, 10));
     setProcStartDate(process.processStartDate ? new Date(process.processStartDate).toISOString().slice(0, 10) : '');
     setProcEndDate(process.processEndDate ? new Date(process.processEndDate).toISOString().slice(0, 10) : '');
     setProcRemarks(process.remarks || '');
@@ -283,7 +281,6 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     setProcInputWeight('');
     setProcOutputWeight('');
     setProcCostAmount('');
-    setProcDate('');
     setProcStartDate('');
     setProcEndDate('');
     setProcRemarks('');
