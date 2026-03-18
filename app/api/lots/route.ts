@@ -16,25 +16,26 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where = {
-      ...(status ? { status: status as 'PURCHASED' | 'IN_PROCESS' | 'AT_VENDOR' | 'READY' | 'SOLD' | 'CLOSED' | 'HOLD' } : {}),
-      ...(stage
-        ? {
-            currentStage: stage as 'CUTTING' | 'SARIN_MEASUREMENT' | 'POLISHING' | 'READY_INVENTORY' | 'SOLD',
-          }
-        : {}),
-      ...(sourceType
-        ? {
-            sourceType: sourceType as 'PURCHASE' | 'SPLIT' | 'ADJUSTMENT',
-          }
-        : {}),
-      ...(q
-        ? {
-            OR: [
-              { lotNo: { contains: q, mode: 'insensitive' as const } },
-              { sourcePurchase: { purchaseNo: { contains: q, mode: 'insensitive' as const } } },
-            ],
-          }
-        : {}),
+      AND: [
+        { status: { not: 'CLOSED' as const } },
+        ...(status
+          ? [{ status: status as 'PURCHASED' | 'IN_PROCESS' | 'AT_VENDOR' | 'READY' | 'SOLD' | 'CLOSED' | 'HOLD' }]
+          : []),
+        ...(stage
+          ? [{ currentStage: stage as 'CUTTING' | 'SARIN_MEASUREMENT' | 'POLISHING' | 'READY_INVENTORY' | 'SOLD' }]
+          : []),
+        ...(sourceType
+          ? [{ sourceType: sourceType as 'PURCHASE' | 'SPLIT' | 'ADJUSTMENT' }]
+          : []),
+        ...(q
+          ? [{
+              OR: [
+                { lotNo: { contains: q, mode: 'insensitive' as const } },
+                { sourcePurchase: { purchaseNo: { contains: q, mode: 'insensitive' as const } } },
+              ],
+            }]
+          : []),
+      ],
     };
 
     const [lots, total] = await Promise.all([

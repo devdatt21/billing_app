@@ -36,7 +36,10 @@ export async function GET(
   if (!lot) return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
 
   const processes = await prisma.lotProcess.findMany({
-    where: { lotId },
+    where: {
+      lotId,
+      status: { not: 'CANCELLED' },
+    },
     include: {
       processType: { select: { id: true, name: true, stage: true } },
       vendor: { select: { id: true, name: true } },
@@ -78,11 +81,29 @@ export async function POST(
       );
     }
 
+    const latestProcess = await prisma.lotProcess.findFirst({
+      where: {
+        lotId,
+        status: { not: 'CANCELLED' },
+      },
+      orderBy: [{ processDate: 'desc' }, { id: 'desc' }],
+      select: { inputWeight: true, outputWeight: true, status: true },
+    });
+
+    const effectiveCurrentWeight = latestProcess
+      && latestProcess.status === 'IN_PROGRESS'
+      && new Decimal(latestProcess.outputWeight).eq(0)
+      ? new Decimal(latestProcess.inputWeight)
+      : currentWeight;
+
     const body = await request.json();
+    const hasProvidedOutputWeight = body.outputWeight !== undefined
+      && body.outputWeight !== null
+      && String(body.outputWeight).trim() !== '';
 
     const processTypeId = parseId(String(body.processTypeId ?? ''));
     if (!processTypeId) {
-      return NextResponse.json({ error: 'processTypeId is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Process Type is required.' }, { status: 400 });
     }
 
     const processType = await prisma.processType.findUnique({
@@ -119,14 +140,14 @@ export async function POST(
 
     const inputWeight = new Decimal(String(body.inputWeight ?? '0'));
     if (inputWeight.lte(0)) {
-      return NextResponse.json({ error: 'inputWeight must be greater than 0' }, { status: 400 });
+      return NextResponse.json({ error: 'Input Weight must be greater than 0.' }, { status: 400 });
     }
-    if (inputWeight.gt(currentWeight)) {
+    if (inputWeight.gt(effectiveCurrentWeight)) {
       return NextResponse.json(
         {
-          error: 'inputWeight cannot exceed lot current weight',
+          error: 'Input Weight cannot exceed Current Lot Weight.',
           details: {
-            lotCurrentWeight: currentWeight.toString(),
+            lotCurrentWeight: effectiveCurrentWeight.toString(),
             inputWeight: inputWeight.toString(),
           },
         },
@@ -134,19 +155,19 @@ export async function POST(
       );
     }
 
-    const outputWeight = new Decimal(String(body.outputWeight ?? '0'));
+    const outputWeight = new Decimal(String(hasProvidedOutputWeight ? body.outputWeight : '0'));
     if (outputWeight.lt(0)) {
-      return NextResponse.json({ error: 'outputWeight cannot be negative' }, { status: 400 });
+      return NextResponse.json({ error: 'Output Weight cannot be negative.' }, { status: 400 });
     }
     if (outputWeight.gt(inputWeight)) {
-      return NextResponse.json({ error: 'outputWeight cannot exceed inputWeight' }, { status: 400 });
+      return NextResponse.json({ error: 'Output Weight cannot exceed Input Weight.' }, { status: 400 });
     }
 
     const lossWeight = inputWeight.minus(outputWeight);
 
     const vendorId = body.vendorId ? parseId(String(body.vendorId)) : null;
     if (body.vendorId && !vendorId) {
-      return NextResponse.json({ error: 'Invalid vendorId' }, { status: 400 });
+      return NextResponse.json({ error: 'Vendor is invalid.' }, { status: 400 });
     }
 
     // Validate vendor exists if provided
@@ -157,7 +178,7 @@ export async function POST(
 
     const processStartDate = body.processStartDate ? new Date(body.processStartDate) : null;
     if (!processStartDate || isNaN(processStartDate.getTime())) {
-      return NextResponse.json({ error: 'processStartDate is required and must be valid' }, { status: 400 });
+      return NextResponse.json({ error: 'Start Date is required and must be valid.' }, { status: 400 });
     }
 
     const processDate = processStartDate;
@@ -165,7 +186,10 @@ export async function POST(
     // Do not allow process date before latest lot activity date (process/split timeline consistency)
     const [lastProcess, lastSplitOut, lastSplitIn] = await Promise.all([
       prisma.lotProcess.findFirst({
-        where: { lotId },
+        where: {
+          lotId,
+          status: { not: 'CANCELLED' },
+        },
         orderBy: { processDate: 'desc' },
         select: { processDate: true },
       }),
@@ -200,12 +224,15 @@ export async function POST(
 
     const costAmount = new Decimal(String(body.costAmount ?? '0'));
     if (costAmount.lt(0)) {
-      return NextResponse.json({ error: 'costAmount cannot be negative' }, { status: 400 });
+      return NextResponse.json({ error: 'Cost Amount cannot be negative.' }, { status: 400 });
     }
 
     const processEndDate = body.processEndDate ? new Date(body.processEndDate) : null;
     if (body.processEndDate && isNaN((processEndDate as Date).getTime())) {
-      return NextResponse.json({ error: 'Invalid processEndDate' }, { status: 400 });
+      return NextResponse.json({ error: 'End Date is invalid.' }, { status: 400 });
+    }
+    if (processEndDate && processEndDate < processStartDate) {
+      return NextResponse.json({ error: 'End Date cannot be earlier than Start Date.' }, { status: 400 });
     }
 
     const isExternalVendor = vendorId !== null;
@@ -214,6 +241,20 @@ export async function POST(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const processStatus = processEndDate && new Date(processEndDate) <= today ? 'COMPLETED' : 'IN_PROGRESS';
+
+    if (processStatus === 'COMPLETED' && !hasProvidedOutputWeight) {
+      return NextResponse.json(
+        { error: 'Output Weight is required when End Date is today or earlier.' },
+        { status: 400 }
+      );
+    }
+
+    if (processStatus === 'COMPLETED' && !inputWeight.equals(effectiveCurrentWeight)) {
+      return NextResponse.json(
+        { error: `Input Weight must match Current Lot Weight (${effectiveCurrentWeight.toString()}) for same-day completion.` },
+        { status: 400 }
+      );
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const process = await tx.lotProcess.create({
@@ -244,7 +285,7 @@ export async function POST(
       const updatedLot = await tx.lot.update({
         where: { id: lotId },
         data: {
-          currentWeight: outputWeight,
+          currentWeight: hasProvidedOutputWeight ? outputWeight : inputWeight,
           currentStage: processType.stage,
           inventoryState: processType.stage === 'POLISHING'
             ? 'READY_POLISHED'
@@ -277,8 +318,10 @@ export async function POST(
     });
 
     return NextResponse.json(result.process, { status: 201 });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Failed to record process';
-    return NextResponse.json({ error: msg }, { status: 400 });
+  } catch {
+    return NextResponse.json(
+      { error: 'Unable to save process. Please review the entered values and try again.' },
+      { status: 400 }
+    );
   }
 }

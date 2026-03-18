@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
 
@@ -48,10 +49,13 @@ function formatWeight(value: string | number): string {
 
 export default function LotsPage() {
   const { user, isLoading } = useAuth();
+  const toast = useToast();
   const router = useRouter();
 
   const [items, setItems] = useState<LotRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDeleteLot, setConfirmDeleteLot] = useState<LotRow | null>(null);
+  const [deletingLotId, setDeletingLotId] = useState<number | null>(null);
   const [filters, setFilters] = useState<LotFilters>({
     q: '',
     status: '',
@@ -90,6 +94,26 @@ export default function LotsPage() {
     if (!user) return;
     loadLots();
   }, [user, loadLots]);
+
+  const deleteLot = async () => {
+    if (!confirmDeleteLot) return;
+
+    setDeletingLotId(confirmDeleteLot.id);
+    try {
+      const res = await apiClient.delete(`/api/lots/${confirmDeleteLot.id}`);
+      if (!res.ok) {
+        const body = await res.json();
+        toast.error(body.error || 'Failed to delete lot');
+        return;
+      }
+
+      toast.success('Lot deleted successfully.');
+      setConfirmDeleteLot(null);
+      await loadLots();
+    } finally {
+      setDeletingLotId(null);
+    }
+  };
 
   if (isLoading || loading) {
     return <Loader fullScreen text="Loading lots..." />;
@@ -200,7 +224,16 @@ export default function LotsPage() {
                         <td className="px-2 sm:px-3 whitespace-nowrap text-xs">{lot.currentStage}</td>
                         <td className="px-2 sm:px-3 text-center">{lot._count?.childLots ?? 0}</td>
                         <td className="px-2 sm:px-3 text-right">
-                          <Link href={`/lots/${lot.id}`} className="text-blue-600 hover:text-blue-700 text-xs">View</Link>
+                          <div className="inline-flex items-center gap-3">
+                            <Link href={`/lots/${lot.id}`} className="text-blue-600 hover:text-blue-700 text-xs">View</Link>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteLot(lot)}
+                              className="text-red-600 hover:text-red-700 text-xs"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -211,6 +244,39 @@ export default function LotsPage() {
           )}
         </section>
       </main>
+
+      {confirmDeleteLot ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900">Delete Lot?</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Lot <span className="font-semibold">{confirmDeleteLot.lotNo}</span> will be deleted.
+            </p>
+            {confirmDeleteLot._count?.childLots > 0 ? (
+              <p className="mt-2 text-sm text-red-600">This lot has child lots. Delete child lots first.</p>
+            ) : null}
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => deletingLotId === null && setConfirmDeleteLot(null)}
+                disabled={deletingLotId !== null}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={deleteLot}
+                disabled={deletingLotId !== null || (confirmDeleteLot._count?.childLots ?? 0) > 0}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingLotId !== null ? 'Deleting...' : 'Delete Lot'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

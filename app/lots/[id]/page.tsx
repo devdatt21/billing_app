@@ -120,7 +120,39 @@ function formatDate(value: string): string {
   });
 }
 
+function toLocalInputDate(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function toUserMessage(message: string): string {
+  const replacements: Array<[RegExp, string]> = [
+    [/outputWeight/g, 'Output Weight'],
+    [/inputWeight/g, 'Input Weight'],
+    [/costAmount/g, 'Cost Amount'],
+    [/vendorId/g, 'Vendor'],
+    [/processTypeId/g, 'Process Type'],
+    [/processStartDate/g, 'Start Date'],
+    [/processEndDate/g, 'End Date'],
+    [/returnedAt/g, 'Return Date'],
+  ];
+
+  return replacements.reduce((acc, [pattern, replacement]) => acc.replace(pattern, replacement), message);
+}
+
 const timelineDotClass = 'absolute left-[-1rem] top-1 block h-3 w-3 -translate-x-1/2 rounded-full border-2 border-white box-border';
+
+function AnimatedDots() {
+  return (
+    <span className="ml-1 inline-flex items-end gap-1" aria-hidden="true">
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '0.15s' }} />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '0.3s' }} />
+    </span>
+  );
+}
 
 export default function LotDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -141,6 +173,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const [vendorName, setVendorName] = useState('');
   const [vSearch, setVSearch] = useState('');
   const [vOptions, setVOptions] = useState<{ id: number; name: string }[]>([]);
+  const [vDropdownOpen, setVDropdownOpen] = useState(false);
   const [procInputWeight, setProcInputWeight] = useState('');
   const [procOutputWeight, setProcOutputWeight] = useState('');
   const [procCostAmount, setProcCostAmount] = useState('');
@@ -149,6 +182,8 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const [procRemarks, setProcRemarks] = useState('');
   const [editingProcessId, setEditingProcessId] = useState<number | null>(null);
   const [procSaving, setProcSaving] = useState(false);
+  const [deletingProcessId, setDeletingProcessId] = useState<number | null>(null);
+  const [confirmDeleteProcessId, setConfirmDeleteProcessId] = useState<number | null>(null);
 
   const loadLot = useCallback(async () => {
     try {
@@ -190,7 +225,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       ...lot.splitAsSource.map((s) => ({ kind: 'split-out' as const, date: s.splitDate, data: s })),
       ...lot.splitAsChild.map((s) => ({ kind: 'split-in' as const, date: s.splitDate, data: s })),
     ];
-    return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [lot]);
 
   const minProcessDate = useMemo(() => {
@@ -205,8 +240,54 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
     if (allDates.length === 0) return '';
     const latest = new Date(Math.max(...allDates.map((d) => d.getTime())));
-    return latest.toISOString().slice(0, 10);
+    return toLocalInputDate(latest);
   }, [lot]);
+
+  const todayDate = useMemo(() => toLocalInputDate(new Date()), []);
+
+  const effectiveStartMinDate = useMemo(() => {
+    if (!minProcessDate) return '';
+    return minProcessDate > todayDate ? todayDate : minProcessDate;
+  }, [minProcessDate, todayDate]);
+
+  const displayCurrentWeight = useMemo(() => {
+    if (!lot) return '0';
+
+    const activeProcesses = lot.processes.filter((p) => p.status !== 'CANCELLED');
+
+    const latestProcess = [...activeProcesses]
+      .sort(
+        (a, b) =>
+          new Date(b.processStartDate || b.processDate).getTime()
+          - new Date(a.processStartDate || a.processDate).getTime()
+      )[0];
+
+    if (
+      latestProcess
+      && latestProcess.status === 'IN_PROGRESS'
+      && Number(latestProcess.outputWeight) === 0
+      && Number(latestProcess.inputWeight) > 0
+    ) {
+      return latestProcess.inputWeight;
+    }
+
+    return lot.currentWeight;
+  }, [lot]);
+
+  const latestProcessId = useMemo(() => {
+    if (!lot || lot.processes.length === 0) return null;
+    const activeProcesses = lot.processes.filter((p) => p.status !== 'CANCELLED');
+    if (activeProcesses.length === 0) return null;
+
+    return [...activeProcesses]
+      .sort(
+        (a, b) =>
+          new Date(b.processStartDate || b.processDate).getTime()
+          - new Date(a.processStartDate || a.processDate).getTime()
+      )[0]?.id ?? null;
+  }, [lot]);
+
+  const maxAllowedInputWeight = useMemo(() => Number(displayCurrentWeight || 0), [displayCurrentWeight]);
 
   useEffect(() => {
     setProcessTypeLoading(true);
@@ -249,6 +330,23 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     return processTypeOptions.filter((pt) => (stageOrder[pt.stage] ?? 0) >= currentStageOrder);
   }, [lot, processTypeOptions]);
 
+  const isCompletingOnOrBeforeToday = useMemo(() => {
+    if (!procEndDate) return false;
+    const endDate = new Date(procEndDate);
+    if (isNaN(endDate.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return endDate <= today;
+  }, [procEndDate]);
+
+  const mustLockInputToCurrentWeight = isCompletingOnOrBeforeToday && !editingProcessId;
+
+  useEffect(() => {
+    if (mustLockInputToCurrentWeight && lot) {
+      setProcInputWeight(String(lot.currentWeight));
+    }
+  }, [mustLockInputToCurrentWeight, lot]);
+
   const startEditProcess = (process: LotProcess) => {
     if (process.status !== 'IN_PROGRESS') {
       toast.warning('Only IN_PROGRESS process can be edited');
@@ -269,8 +367,8 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     setProcInputWeight(process.inputWeight);
     setProcOutputWeight(process.outputWeight);
     setProcCostAmount(process.costAmount);
-    setProcStartDate(process.processStartDate ? new Date(process.processStartDate).toISOString().slice(0, 10) : '');
-    setProcEndDate(process.processEndDate ? new Date(process.processEndDate).toISOString().slice(0, 10) : '');
+    setProcStartDate(process.processStartDate ? toLocalInputDate(new Date(process.processStartDate)) : '');
+    setProcEndDate(process.processEndDate ? toLocalInputDate(new Date(process.processEndDate)) : '');
     setProcRemarks(process.remarks || '');
     
     if (isMobileView && editFormRef.current) {
@@ -286,6 +384,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     setVendorId('');
     setVendorName('');
     setVSearch('');
+    setVDropdownOpen(false);
     setProcInputWeight('');
     setProcOutputWeight('');
     setProcCostAmount('');
@@ -298,8 +397,28 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     e.preventDefault();
     if (!lot || !processTypeId || !procStartDate) return;
 
-    if (minProcessDate && procStartDate < minProcessDate) {
-      toast.warning(`Start date cannot be earlier than ${minProcessDate}`);
+    if (Number(procInputWeight || 0) > maxAllowedInputWeight) {
+      toast.warning(`Input Weight cannot exceed Current Weight (${formatNumber(displayCurrentWeight)} cts)`);
+      return;
+    }
+
+    if (effectiveStartMinDate && procStartDate < effectiveStartMinDate) {
+      toast.warning(`Start date cannot be earlier than ${effectiveStartMinDate}`);
+      return;
+    }
+
+    if (procEndDate && procEndDate < procStartDate) {
+      toast.warning('End date cannot be earlier than start date');
+      return;
+    }
+
+    if (isCompletingOnOrBeforeToday && procOutputWeight.trim() === '') {
+      toast.warning('Output weight is required when process end date is today or earlier');
+      return;
+    }
+
+    if (mustLockInputToCurrentWeight && Number(procInputWeight || 0) !== Number(lot.currentWeight)) {
+      toast.warning(`Input weight must match current lot weight (${formatNumber(lot.currentWeight)} cts)`);
       return;
     }
 
@@ -309,7 +428,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
         processTypeId: Number(processTypeId),
         vendorId: vendorId ? Number(vendorId) : undefined,
         inputWeight: procInputWeight,
-        outputWeight: procOutputWeight,
+        outputWeight: procOutputWeight.trim() === '' ? undefined : procOutputWeight,
         costAmount: procCostAmount || '0',
         processDate: procStartDate,
         processStartDate: procStartDate || null,
@@ -323,7 +442,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
       if (!res.ok) {
         const b = await res.json();
-        toast.error(b.error || 'Failed to save process');
+        toast.error(toUserMessage(b.error || 'Failed to save process'));
         return;
       }
 
@@ -357,7 +476,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
       if (!res.ok) {
         const body = await res.json();
-        toast.error(body.error || 'Failed to split lot');
+        toast.error(toUserMessage(body.error || 'Failed to split lot'));
         return;
       }
 
@@ -366,6 +485,40 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       toast.success('Lot split saved successfully.');
     } finally {
       setSplitSaving(false);
+    }
+  };
+
+  const openDeleteProcessModal = (processId: number) => {
+    setConfirmDeleteProcessId(processId);
+  };
+
+  const closeDeleteProcessModal = () => {
+    if (deletingProcessId) return;
+    setConfirmDeleteProcessId(null);
+  };
+
+  const deleteLastProcess = async () => {
+    if (!lot || !confirmDeleteProcessId) return;
+
+    const processId = confirmDeleteProcessId;
+    setDeletingProcessId(processId);
+    try {
+      const res = await apiClient.delete(`/api/lots/${lot.id}/processes/${processId}`);
+      if (!res.ok) {
+        const body = await res.json();
+        toast.error(toUserMessage(body.error || 'Failed to delete process'));
+        return;
+      }
+
+      if (editingProcessId === processId) {
+        resetProcessForm();
+      }
+
+      await loadLot();
+      toast.success('Latest process deleted successfully.');
+      setConfirmDeleteProcessId(null);
+    } finally {
+      setDeletingProcessId(null);
     }
   };
 
@@ -406,7 +559,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div><p className="text-gray-500">Initial</p><p className="font-semibold">{formatNumber(lot.initialWeight)} cts</p></div>
-            <div><p className="text-gray-500">Current</p><p className="font-semibold">{formatNumber(lot.currentWeight)} cts</p></div>
+            <div><p className="text-gray-500">Current</p><p className="font-semibold">{formatNumber(displayCurrentWeight)} cts</p></div>
             <div><p className="text-gray-500">Status</p><p className="font-semibold">{lot.status}</p></div>
             <div><p className="text-gray-500">Stage</p><p className="font-semibold">{lot.currentStage}</p></div>
           </div>
@@ -493,8 +646,8 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                           </div>
                         )}
                         <p className="text-xs text-gray-600">
-                          In: {formatNumber(p.inputWeight)} cts → Out: {formatNumber(p.outputWeight)} cts
-                          {Number(p.lossWeight) !== 0 && (
+                          In: {formatNumber(p.inputWeight)} cts → Out: {p.status === 'IN_PROGRESS' && Number(p.outputWeight) === 0 ? '--' : `${formatNumber(p.outputWeight)} cts`}
+                          {!(p.status === 'IN_PROGRESS' && Number(p.outputWeight) === 0) && Number(p.lossWeight) !== 0 && (
                             <span className="ml-1 text-amber-600">Loss: {formatNumber(p.lossWeight)} cts</span>
                           )}
                         </p>
@@ -518,6 +671,19 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          ) : null}
+                          {latestProcessId === p.id ? (
+                            <button
+                              type="button"
+                              onClick={() => openDeleteProcessModal(p.id)}
+                              disabled={deletingProcessId === p.id}
+                              className="inline-flex items-center justify-center w-5 h-5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                              title="Delete latest process"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-7 0h8" />
                               </svg>
                             </button>
                           ) : null}
@@ -627,14 +793,23 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                   placeholder="Search vendor…"
                   value={vSearch}
                   onChange={(e) => setVSearch(e.target.value)}
+                  onFocus={() => setVDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setVDropdownOpen(false), 200)}
                   className="w-full px-3 py-2 border rounded text-sm"
                 />
-                {vOptions.length > 0 && (
+                {vDropdownOpen && vOptions.length > 0 && (
                   <ul className="absolute z-10 w-full bg-white border rounded shadow-sm mt-1 max-h-40 overflow-y-auto text-sm">
                     {vOptions.map((v) => (
                       <li key={v.id}
                         className="px-3 py-2 hover:bg-blue-50 cursor-pointer"
-                        onClick={() => { setVendorId(String(v.id)); setVendorName(v.name); setVSearch(''); setVOptions([]); }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setVendorId(String(v.id));
+                          setVendorName(v.name);
+                          setVSearch('');
+                          setVOptions([]);
+                          setVDropdownOpen(false);
+                        }}
                       >{v.name}</li>
                     ))}
                   </ul>
@@ -643,18 +818,35 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             )}
           </div>
 
+          {lot && (
+            <div className="p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+              <p className="text-gray-700">Current Weight: <span className="font-semibold text-blue-700">{formatNumber(displayCurrentWeight)} cts</span></p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Input Weight (cts) *</label>
               <input type="number" step="0.001" min="0" value={procInputWeight}
                 onChange={(e) => setProcInputWeight(e.target.value)}
-                className="w-full px-3 py-2 border rounded text-sm" required />
+                className={`w-full px-3 py-2 border rounded text-sm ${mustLockInputToCurrentWeight ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''}`}
+                required
+                max={maxAllowedInputWeight > 0 ? maxAllowedInputWeight : undefined}
+                readOnly={mustLockInputToCurrentWeight}
+              />
+              {mustLockInputToCurrentWeight ? (
+                <p className="mt-1 text-xs text-gray-500">Auto-filled from last process output (current lot weight).</p>
+              ) : null}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Output Weight (cts) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Output Weight (cts) {isCompletingOnOrBeforeToday ? '*' : '(optional)'}
+              </label>
               <input type="number" step="0.001" min="0" value={procOutputWeight}
                 onChange={(e) => setProcOutputWeight(e.target.value)}
-                className="w-full px-3 py-2 border rounded text-sm" required />
+                className="w-full px-3 py-2 border rounded text-sm"
+                required={isCompletingOnOrBeforeToday}
+              />
             </div>
           </div>
 
@@ -670,16 +862,20 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
               <input type="date" value={procStartDate} onChange={(e) => setProcStartDate(e.target.value)}
-                min={minProcessDate || undefined}
+                min={effectiveStartMinDate || undefined}
                 className="w-full px-3 py-2 border rounded text-sm" required />
-              {minProcessDate ? (
-                <p className="mt-1 text-xs text-gray-500">On or after {minProcessDate}</p>
+              {effectiveStartMinDate ? (
+                <p className="mt-1 text-xs text-gray-500">On or after {effectiveStartMinDate}</p>
               ) : null}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">End Date (optional)</label>
               <input type="date" value={procEndDate} onChange={(e) => setProcEndDate(e.target.value)}
+                min={procStartDate || undefined}
                 className="w-full px-3 py-2 border rounded text-sm" />
+              {procEndDate && procEndDate < procStartDate ? (
+                <p className="mt-1 text-xs text-red-600">End date cannot be earlier than start date.</p>
+              ) : null}
               {procEndDate && (
                 (() => {
                   const endDate = new Date(procEndDate);
@@ -714,7 +910,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
               disabled={procSaving || !processTypeId || !procStartDate}
               className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
             >
-              {procSaving ? 'Saving…' : editingProcessId ? 'Update Process' : 'Record Process'}
+              {procSaving ? <>Saving <AnimatedDots /></> : editingProcessId ? 'Update Process' : 'Record Process'}
             </button>
             {editingProcessId ? (
               <button
@@ -780,10 +976,42 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             disabled={splitSaving}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {splitSaving ? 'Saving split...' : 'Save Split'}
+            {splitSaving ? <>Saving split <AnimatedDots /></> : 'Save Split'}
           </button>
         </form>
         </main>
+
+      {confirmDeleteProcessId !== null ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900">Delete Latest Process?</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              This will remove the latest process, rollback lot weight/stage, and delete related process cost entries.
+            </p>
+            <p className="mt-1 text-sm text-red-600">This action cannot be undone.</p>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeDeleteProcessModal}
+                disabled={deletingProcessId !== null}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={deleteLastProcess}
+                disabled={deletingProcessId !== null}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingProcessId !== null ? <>Deleting <AnimatedDots /></> : 'Delete Process'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
        </div>
   );
 }

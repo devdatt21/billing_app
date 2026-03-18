@@ -56,7 +56,10 @@ export async function PUT(
     }
 
     const latest = await prisma.lotProcess.findFirst({
-      where: { lotId },
+      where: {
+        lotId,
+        status: { not: 'CANCELLED' },
+      },
       orderBy: [{ processDate: 'desc' }, { id: 'desc' }],
       select: { id: true },
     });
@@ -69,7 +72,7 @@ export async function PUT(
 
     const nextProcessTypeId = body.processTypeId ? parseId(String(body.processTypeId)) : existing.processTypeId;
     if (!nextProcessTypeId) {
-      return NextResponse.json({ error: 'processTypeId is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Process Type is required.' }, { status: 400 });
     }
 
     const nextProcessType = await prisma.processType.findUnique({
@@ -91,7 +94,11 @@ export async function PUT(
     }, {});
 
     const previousProcess = await prisma.lotProcess.findFirst({
-      where: { lotId, id: { not: processId } },
+      where: {
+        lotId,
+        id: { not: processId },
+        status: { not: 'CANCELLED' },
+      },
       include: { processType: { select: { stage: true } } },
       orderBy: [{ processDate: 'desc' }, { id: 'desc' }],
     });
@@ -108,25 +115,25 @@ export async function PUT(
 
     const inputWeight = new Decimal(String(body.inputWeight ?? existing.inputWeight));
     if (inputWeight.lte(0)) {
-      return NextResponse.json({ error: 'inputWeight must be greater than 0' }, { status: 400 });
+      return NextResponse.json({ error: 'Input Weight must be greater than 0.' }, { status: 400 });
     }
 
     const outputWeight = new Decimal(String(body.outputWeight ?? existing.outputWeight));
     if (outputWeight.lt(0)) {
-      return NextResponse.json({ error: 'outputWeight cannot be negative' }, { status: 400 });
+      return NextResponse.json({ error: 'Output Weight cannot be negative.' }, { status: 400 });
     }
     if (outputWeight.gt(inputWeight)) {
-      return NextResponse.json({ error: 'outputWeight cannot exceed inputWeight' }, { status: 400 });
+      return NextResponse.json({ error: 'Output Weight cannot exceed Input Weight.' }, { status: 400 });
     }
 
     const costAmount = new Decimal(String(body.costAmount ?? existing.costAmount));
     if (costAmount.lt(0)) {
-      return NextResponse.json({ error: 'costAmount cannot be negative' }, { status: 400 });
+      return NextResponse.json({ error: 'Cost Amount cannot be negative.' }, { status: 400 });
     }
 
     const vendorId = body.vendorId ? parseId(String(body.vendorId)) : null;
     if (body.vendorId && !vendorId) {
-      return NextResponse.json({ error: 'Invalid vendorId' }, { status: 400 });
+      return NextResponse.json({ error: 'Vendor is invalid.' }, { status: 400 });
     }
     if (vendorId) {
       const vendor = await prisma.vendor.findUnique({ where: { id: vendorId }, select: { id: true } });
@@ -135,14 +142,17 @@ export async function PUT(
 
     const processStartDate = body.processStartDate ? new Date(body.processStartDate) : (existingDates.processStartDate ?? existing.processDate);
     if (!processStartDate || isNaN(processStartDate.getTime())) {
-      return NextResponse.json({ error: 'processStartDate is required and must be valid' }, { status: 400 });
+      return NextResponse.json({ error: 'Start Date is required and must be valid.' }, { status: 400 });
     }
 
     const processDate = processStartDate;
 
     const processEndDate = body.processEndDate ? new Date(body.processEndDate) : (existingDates.processEndDate ?? null);
     if (body.processEndDate && (!processEndDate || isNaN(processEndDate.getTime()))) {
-      return NextResponse.json({ error: 'Invalid processEndDate' }, { status: 400 });
+      return NextResponse.json({ error: 'End Date is invalid.' }, { status: 400 });
+    }
+    if (processEndDate && processEndDate < processStartDate) {
+      return NextResponse.json({ error: 'End Date cannot be earlier than Start Date.' }, { status: 400 });
     }
 
     // Auto-complete if processEndDate is in past or today
@@ -215,9 +225,11 @@ export async function PUT(
     });
 
     return NextResponse.json(result);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Failed to edit process';
-    return NextResponse.json({ error: msg }, { status: 400 });
+  } catch {
+    return NextResponse.json(
+      { error: 'Unable to update process. Please review the entered values and try again.' },
+      { status: 400 }
+    );
   }
 }
 
@@ -311,8 +323,132 @@ export async function PATCH(
     });
 
     return NextResponse.json(result);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Failed to update process';
-    return NextResponse.json({ error: msg }, { status: 400 });
+  } catch {
+    return NextResponse.json(
+      { error: 'Unable to update process status. Please try again.' },
+      { status: 400 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string; processId: string } }
+) {
+  try {
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const lotId = parseId(params.id);
+    const processId = parseId(params.processId);
+    if (!lotId || !processId) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
+    const existing = await prisma.lotProcess.findUnique({
+      where: { id: processId },
+      include: {
+        processType: { select: { stage: true } },
+        lot: {
+          select: {
+            id: true,
+            initialWeight: true,
+            accumulatedCost: true,
+          },
+        },
+      },
+    });
+
+    if (!existing || existing.lotId !== lotId) {
+      return NextResponse.json({ error: 'Process record not found' }, { status: 404 });
+    }
+
+    if (existing.status === 'CANCELLED') {
+      return NextResponse.json({ error: 'Process is already deleted.' }, { status: 422 });
+    }
+
+    const latest = await prisma.lotProcess.findFirst({
+      where: {
+        lotId,
+        status: { not: 'CANCELLED' },
+      },
+      orderBy: [{ processDate: 'desc' }, { id: 'desc' }],
+      select: { id: true },
+    });
+
+    if (!latest || latest.id !== processId) {
+      return NextResponse.json({ error: 'Only latest process can be deleted.' }, { status: 422 });
+    }
+
+    const previousProcess = await prisma.lotProcess.findFirst({
+      where: {
+        lotId,
+        id: { not: processId },
+        status: { not: 'CANCELLED' },
+      },
+      include: { processType: { select: { stage: true } } },
+      orderBy: [{ processDate: 'desc' }, { id: 'desc' }],
+    });
+
+    const restoredWeight = previousProcess
+      ? new Decimal(previousProcess.outputWeight).eq(0)
+        ? new Decimal(previousProcess.inputWeight)
+        : new Decimal(previousProcess.outputWeight)
+      : new Decimal(existing.lot.initialWeight);
+
+    const restoredStage = previousProcess?.processType.stage ?? 'CUTTING';
+    const restoredInventoryState = previousProcess
+      ? previousProcess.processType.stage === 'POLISHING'
+        ? 'READY_POLISHED'
+        : 'WIP'
+      : 'ROUGH';
+    const restoredStatus = previousProcess ? 'IN_PROCESS' : 'PURCHASED';
+
+    const nextAccumulatedCost = new Decimal(existing.lot.accumulatedCost)
+      .minus(existing.costAmount);
+
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.lotCost.updateMany({
+        where: { lotId, sourceType: 'LOT_PROCESS', sourceRefId: processId },
+        data: {
+          amount: new Decimal(0),
+          remarks: 'Soft-deleted with process cancellation',
+        },
+      });
+
+      await tx.lotProcess.update({
+        where: { id: processId },
+        data: {
+          status: 'CANCELLED',
+          remarks: existing.remarks
+            ? `${existing.remarks} | Soft-deleted on ${new Date().toISOString()}`
+            : `Soft-deleted on ${new Date().toISOString()}`,
+          updatedBy: user.userId || null,
+        },
+      });
+
+      await tx.lot.update({
+        where: { id: lotId },
+        data: {
+          currentWeight: restoredWeight,
+          currentStage: restoredStage,
+          inventoryState: restoredInventoryState,
+          status: restoredStatus,
+          accumulatedCost: nextAccumulatedCost.lt(0) ? new Decimal(0) : nextAccumulatedCost,
+          updatedBy: user.userId || null,
+        },
+      });
+
+      return { deletedProcessId: processId, softDeleted: true };
+    });
+
+    return NextResponse.json(result);
+  } catch {
+    return NextResponse.json(
+      { error: 'Unable to delete process. Please try again.' },
+      { status: 400 }
+    );
   }
 }
