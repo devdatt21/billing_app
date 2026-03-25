@@ -7,6 +7,53 @@
   --foreground: #171717;
 }
 
+html.dark {
+  --background: #0b1220;
+  --foreground: #e5e7eb;
+  color-scheme: dark;
+}
+
+/* Keep legacy pages visually consistent in dark mode without rewriting each file. */
+html.dark .theme-content .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+
+html.dark .theme-content .bg-white {
+  background-color: #111827 !important;
+}
+
+html.dark .theme-content .border-gray-200,
+html.dark .theme-content .border-gray-300,
+html.dark .theme-content .border {
+  border-color: #334155 !important;
+}
+
+html.dark .theme-content .text-gray-900 {
+  color: #f8fafc !important;
+}
+
+html.dark .theme-content .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .theme-content .text-gray-600,
+html.dark .theme-content .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .theme-content .hover\:bg-gray-100:hover,
+html.dark .theme-content .hover\:bg-gray-50:hover {
+  background-color: #1e293b !important;
+}
+
+html.dark .theme-content input,
+html.dark .theme-content select,
+html.dark .theme-content textarea {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
