@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, generateAccessToken, generateRefreshToken } from '@/lib/auth';
+import { buildRateLimitKey, enforceRateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -12,6 +13,24 @@ const loginSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitKey = buildRateLimitKey(
+      'auth:login',
+      request.headers.get('x-forwarded-for'),
+      request.headers.get('x-real-ip')
+    );
+    const rateLimit = enforceRateLimit(rateLimitKey, 10, 60_000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfterSeconds),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     
     // Validate input

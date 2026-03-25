@@ -42,8 +42,14 @@ export async function GET(request: NextRequest) {
     const onlyActive = searchParams.get('onlyActive') === 'true';
     const skip = (page - 1) * limit;
 
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const whereClause = {
       isDeleted: false,
+      createdBy: user.userId,  // Row-level security: user only sees their own customers
       ...(onlyActive ? { isActive: true } : {}),
       ...(q
         ? {

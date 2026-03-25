@@ -10,14 +10,17 @@ function parseId(id: string): number | null {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid lot ID' }, { status: 400 });
 
-  const lot = await prisma.lot.findUnique({
-    where: { id },
+  const user = getUserFromHeaders(request);
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+  const lot = await prisma.lot.findFirst({
+    where: { id, createdBy: user.userId, isDeleted: false },  // Row-level security
     include: {
       sourcePurchase: {
         select: {
@@ -41,6 +44,7 @@ export async function GET(
         },
       },
       childLots: {
+        where: { isDeleted: false },
         select: {
           id: true,
           lotNo: true,
@@ -52,6 +56,12 @@ export async function GET(
         orderBy: { createdAt: 'asc' },
       },
       splitAsSource: {
+        where: {
+          isDeleted: false,
+          childLot: {
+            isDeleted: false,
+          },
+        },
         include: {
           childLot: {
             select: {
@@ -65,6 +75,12 @@ export async function GET(
         orderBy: { splitDate: 'desc' },
       },
       splitAsChild: {
+        where: {
+          isDeleted: false,
+          sourceLot: {
+            isDeleted: false,
+          },
+        },
         include: {
           sourceLot: {
             select: {
@@ -78,11 +94,15 @@ export async function GET(
         orderBy: { splitDate: 'desc' },
       },
       costs: {
+        where: {
+          isDeleted: false,
+        },
         orderBy: { createdAt: 'desc' },
       },
       processes: {
         where: {
           status: { not: 'CANCELLED' },
+          isDeleted: false,
         },
         include: {
           processType: {
@@ -114,32 +134,30 @@ export async function DELETE(
     const id = parseId(params.id);
     if (!id) return NextResponse.json({ error: 'Invalid lot ID' }, { status: 400 });
 
-    const lot = await prisma.lot.findUnique({
-      where: { id },
+    const lot = await prisma.lot.findFirst({
+      where: { id, createdBy: user.userId, isDeleted: false },
       select: {
         id: true,
         lotNo: true,
         status: true,
         notes: true,
-        _count: {
-          select: {
-            childLots: true,
-          },
-        },
       },
     });
 
     if (!lot) return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
 
-    if (lot._count.childLots > 0) {
+    const activeChildLots = await prisma.lot.count({
+      where: {
+        parentLotId: lot.id,
+        isDeleted: false,
+      },
+    });
+
+    if (activeChildLots > 0) {
       return NextResponse.json(
         { error: 'Cannot delete this parent lot because child lots exist. Delete child lots first.' },
         { status: 422 }
       );
-    }
-
-    if (lot.status === 'CLOSED') {
-      return NextResponse.json({ error: 'Lot is already deleted.' }, { status: 422 });
     }
 
     const deletedStamp = `Deleted on ${new Date().toISOString()} by user ${user.userId}`;
@@ -148,6 +166,8 @@ export async function DELETE(
     await prisma.lot.update({
       where: { id },
       data: {
+        isDeleted: true,
+        deletedAt: new Date(),
         status: 'CLOSED',
         notes: nextNotes,
         updatedBy: user.userId || null,

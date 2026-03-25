@@ -41,11 +41,11 @@ export async function PUT(
       where: { id: processId },
       include: {
         processType: { select: { id: true, stage: true, sequence: true } },
-        lot: { select: { id: true, currentStage: true, accumulatedCost: true, inventoryState: true, status: true } },
+        lot: { select: { id: true, currentStage: true, accumulatedCost: true, inventoryState: true, status: true, createdBy: true, isDeleted: true } },
       },
     });
 
-    if (!existing || existing.lotId !== lotId) {
+    if (!existing || existing.isDeleted || existing.lotId !== lotId || existing.lot.isDeleted || existing.lot.createdBy !== user.userId) {
       return NextResponse.json({ error: 'Process record not found' }, { status: 404 });
     }
 
@@ -59,6 +59,7 @@ export async function PUT(
       where: {
         lotId,
         status: { not: 'CANCELLED' },
+        isDeleted: false,
       },
       orderBy: [{ processDate: 'desc' }, { id: 'desc' }],
       select: { id: true },
@@ -75,8 +76,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Process Type is required.' }, { status: 400 });
     }
 
-    const nextProcessType = await prisma.processType.findUnique({
-      where: { id: nextProcessTypeId },
+    const nextProcessType = await prisma.processType.findFirst({
+      where: { id: nextProcessTypeId, createdBy: user.userId, isDeleted: false },
       select: { id: true, name: true, stage: true, sequence: true, isActive: true },
     });
     if (!nextProcessType || !nextProcessType.isActive) {
@@ -84,7 +85,7 @@ export async function PUT(
     }
 
     const stageRows = await prisma.processType.findMany({
-      where: { isActive: true },
+      where: { createdBy: user.userId, isActive: true, isDeleted: false },
       select: { stage: true, sequence: true },
       orderBy: { sequence: 'asc' },
     });
@@ -98,6 +99,7 @@ export async function PUT(
         lotId,
         id: { not: processId },
         status: { not: 'CANCELLED' },
+        isDeleted: false,
       },
       include: { processType: { select: { stage: true } } },
       orderBy: [{ processDate: 'desc' }, { id: 'desc' }],
@@ -202,8 +204,12 @@ export async function PUT(
         },
       });
 
-      await tx.lotCost.deleteMany({
-        where: { lotId, sourceType: 'LOT_PROCESS', sourceRefId: processId },
+      await tx.lotCost.updateMany({
+        where: { lotId, sourceType: 'LOT_PROCESS', sourceRefId: processId, isDeleted: false },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+        },
       });
 
       if (costAmount.gt(0)) {
@@ -253,10 +259,10 @@ export async function PATCH(
 
     const existing = await prisma.lotProcess.findUnique({
       where: { id: processId },
-      include: { processType: { select: { stage: true } } },
+      include: { processType: { select: { stage: true } }, lot: { select: { createdBy: true, isDeleted: true } } },
     });
 
-    if (!existing || existing.lotId !== lotId) {
+    if (!existing || existing.isDeleted || existing.lotId !== lotId || existing.lot.isDeleted || existing.lot.createdBy !== user.userId) {
       return NextResponse.json({ error: 'Process record not found' }, { status: 404 });
     }
 

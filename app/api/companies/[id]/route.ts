@@ -17,9 +17,13 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id);
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
     
     const company = await prisma.company.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, isDeleted: false, createdBy: user.userId },  // Row-level security: own only
     });
     
     if (!company) {
@@ -51,14 +55,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     
-    // Check if company exists
+    // Check if company exists and user owns it
     const existingCompany = await prisma.company.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, isDeleted: false, createdBy: user.userId },  // Row-level security: own only
     });
     
     if (!existingCompany) {
       return NextResponse.json(
-        { error: 'Company not found' },
+        { error: 'Company not found or you do not have permission' },
         { status: 404 }
       );
     }
@@ -122,9 +126,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     
-    // Check if company exists
+    // Check if company exists and user owns it
     const existingCompany = await prisma.company.findFirst({
-      where: { id, isDeleted: false },
+      where: { id, isDeleted: false, createdBy: user.userId },  // Row-level security: own only
       include: {
         invoicesAsSeller: true,
         invoicesAsBuyer: true,
@@ -133,7 +137,7 @@ export async function DELETE(
     
     if (!existingCompany) {
       return NextResponse.json(
-        { error: 'Company not found' },
+        { error: 'Company not found or you do not have permission' },
         { status: 404 }
       );
     }

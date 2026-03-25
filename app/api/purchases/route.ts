@@ -115,6 +115,11 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
     const q = searchParams.get('q')?.trim();
@@ -139,6 +144,8 @@ export async function GET(request: NextRequest) {
     }
 
     const where = {
+      createdBy: user.userId,  // Row-level security: user only sees their own purchases
+      isDeleted: false,
       ...(supplierId ? { supplierId } : {}),
       ...(Object.keys(dateFilter).length ? { purchaseDate: dateFilter } : {}),
       ...(q
@@ -161,6 +168,9 @@ export async function GET(request: NextRequest) {
         include: {
           supplier: true,
           lots: {
+            where: {
+              isDeleted: false,
+            },
             select: {
               id: true,
               lotNo: true,

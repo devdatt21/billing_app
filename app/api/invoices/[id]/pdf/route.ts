@@ -24,8 +24,8 @@ export async function GET(
       );
     }
     
-    const invoice = await prisma.invoice.findUnique({
-      where: { id },
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, createdBy: user.userId },
       include: {
         seller: true,
         buyer: true,

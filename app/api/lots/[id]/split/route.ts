@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Decimal from 'decimal.js';
 import { prisma } from '@/lib/prisma';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
+import { getNextSplitLotNo } from '@/lib/lot-number';
 
 interface SplitChildInput {
   lotNo?: string;
@@ -19,10 +20,6 @@ interface SplitPayload {
 function parseId(id: string): number | null {
   const parsed = parseInt(id, 10);
   return Number.isNaN(parsed) ? null : parsed;
-}
-
-function defaultChildLotNo(parentLotNo: string, index: number): string {
-  return `${parentLotNo}-S${index}`;
 }
 
 export async function POST(
@@ -45,7 +42,7 @@ export async function POST(
       return NextResponse.json({ error: 'At least one child lot is required' }, { status: 400 });
     }
 
-    const sourceLot = await prisma.lot.findUnique({ where: { id } });
+    const sourceLot = await prisma.lot.findFirst({ where: { id, createdBy: user.userId, isDeleted: false } });
     if (!sourceLot) return NextResponse.json({ error: 'Source lot not found' }, { status: 404 });
 
     const sourceCurrentWeight = new Decimal(sourceLot.currentWeight);
@@ -60,13 +57,58 @@ export async function POST(
       }
 
       return {
-        lotNo: child.lotNo?.trim() || defaultChildLotNo(sourceLot.lotNo, idx + 1),
+        lotNo: child.lotNo?.trim() || null,
         weight,
         notes: child.notes?.trim() || null,
       };
     });
 
-    const totalChildWeight = parsedChildren.reduce((sum, child) => sum.plus(child.weight), new Decimal(0));
+    const existingSplitLots = await prisma.lot.findMany({
+      where: {
+        lotNo: {
+          startsWith: `${sourceLot.lotNo}-S`,
+        },
+      },
+      select: { lotNo: true },
+    });
+
+    const requestedLotNos = Array.from(
+      new Set(parsedChildren.map((c) => c.lotNo).filter((value): value is string => !!value))
+    );
+
+    if (requestedLotNos.length > 0) {
+      const existingRequestedLots = await prisma.lot.findMany({
+        where: {
+          lotNo: {
+            in: requestedLotNos,
+          },
+        },
+        select: { lotNo: true },
+      });
+
+      if (existingRequestedLots.length > 0) {
+        return NextResponse.json(
+          { error: `Lot number already exists: ${existingRequestedLots[0].lotNo}` },
+          { status: 409 }
+        );
+      }
+    }
+
+    const usedLotNos = new Set(existingSplitLots.map((l) => l.lotNo));
+    const finalizedChildren = parsedChildren.map((child, idx) => {
+      const finalLotNo = child.lotNo || getNextSplitLotNo(sourceLot.lotNo, usedLotNos);
+      if (usedLotNos.has(finalLotNo)) {
+        throw new Error(`Duplicate child lot number at position ${idx + 1}: ${finalLotNo}`);
+      }
+      usedLotNos.add(finalLotNo);
+
+      return {
+        ...child,
+        lotNo: finalLotNo,
+      };
+    });
+
+    const totalChildWeight = finalizedChildren.reduce((sum, child) => sum.plus(child.weight), new Decimal(0));
 
     if (totalChildWeight.gt(sourceCurrentWeight)) {
       return NextResponse.json(
@@ -94,7 +136,7 @@ export async function POST(
       });
 
       const createdChildren = [];
-      for (const child of parsedChildren) {
+      for (const child of finalizedChildren) {
         const createdChild = await tx.lot.create({
           data: {
             lotNo: child.lotNo,

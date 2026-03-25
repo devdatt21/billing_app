@@ -22,8 +22,8 @@ export async function GET(
       );
     }
     
-    const invoice = await prisma.invoice.findUnique({
-      where: { id },
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, createdBy: user.userId },  // Row-level security: user only sees their own invoices
       include: {
         seller: true,
         buyer: true,

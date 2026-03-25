@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const whereClause = {};
+    const whereClause = { createdBy: user.userId };  // Row-level security: user only sees their own invoices
     
     const [invoices, total] = await Promise.all([
       prisma.invoice.findMany({

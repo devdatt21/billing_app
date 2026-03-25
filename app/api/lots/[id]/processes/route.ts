@@ -26,19 +26,25 @@ function stageToCostCategory(stage: string): CostCategory {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const lotId = parseId(params.id);
   if (!lotId) return NextResponse.json({ error: 'Invalid lot ID' }, { status: 400 });
 
-  const lot = await prisma.lot.findUnique({ where: { id: lotId }, select: { id: true } });
+  const user = getUserFromHeaders(request);
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+
+  const lot = await prisma.lot.findFirst({ where: { id: lotId, createdBy: user.userId, isDeleted: false }, select: { id: true } });
   if (!lot) return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
 
   const processes = await prisma.lotProcess.findMany({
     where: {
       lotId,
       status: { not: 'CANCELLED' },
+      isDeleted: false,
     },
     include: {
       processType: { select: { id: true, name: true, stage: true } },
@@ -63,7 +69,7 @@ export async function POST(
     const lotId = parseId(params.id);
     if (!lotId) return NextResponse.json({ error: 'Invalid lot ID' }, { status: 400 });
 
-    const lot = await prisma.lot.findUnique({ where: { id: lotId } });
+    const lot = await prisma.lot.findFirst({ where: { id: lotId, createdBy: user.userId, isDeleted: false } });
     if (!lot) return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
 
     if (lot.status === 'SOLD' || lot.status === 'CLOSED') {
@@ -85,6 +91,7 @@ export async function POST(
       where: {
         lotId,
         status: { not: 'CANCELLED' },
+        isDeleted: false,
       },
       orderBy: [{ processDate: 'desc' }, { id: 'desc' }],
       select: { inputWeight: true, outputWeight: true, status: true },
@@ -106,17 +113,22 @@ export async function POST(
       return NextResponse.json({ error: 'Process Type is required.' }, { status: 400 });
     }
 
-    const processType = await prisma.processType.findUnique({
-      where: { id: processTypeId },
+    const ownedProcessType = await prisma.processType.findFirst({
+      where: {
+        id: processTypeId,
+        createdBy: user.userId,
+        isActive: true,
+        isDeleted: false,
+      },
       select: { id: true, stage: true, sequence: true, isActive: true },
     });
-    if (!processType || !processType.isActive) {
+    if (!ownedProcessType || !ownedProcessType.isActive) {
       return NextResponse.json({ error: 'Process type not found or inactive' }, { status: 400 });
     }
 
     // Prevent backward stage movement (e.g., Sarin after Polishing)
     const stageSequenceRows = await prisma.processType.findMany({
-      where: { isActive: true },
+      where: { createdBy: user.userId, isActive: true, isDeleted: false },
       select: { stage: true, sequence: true },
       orderBy: { sequence: 'asc' },
     });
@@ -128,11 +140,11 @@ export async function POST(
     }, {});
 
     const currentStageSeq = stageSequenceMap[lot.currentStage];
-    const selectedStageSeq = stageSequenceMap[processType.stage] ?? processType.sequence;
+    const selectedStageSeq = stageSequenceMap[ownedProcessType.stage] ?? ownedProcessType.sequence;
     if (currentStageSeq != null && selectedStageSeq < currentStageSeq) {
       return NextResponse.json(
         {
-          error: `Cannot move process backward from ${lot.currentStage} to ${processType.stage}`,
+          error: `Cannot move process backward from ${lot.currentStage} to ${ownedProcessType.stage}`,
         },
         { status: 422 }
       );
@@ -189,17 +201,18 @@ export async function POST(
         where: {
           lotId,
           status: { not: 'CANCELLED' },
+          isDeleted: false,
         },
         orderBy: { processDate: 'desc' },
         select: { processDate: true },
       }),
       prisma.lotSplit.findFirst({
-        where: { sourceLotId: lotId },
+        where: { sourceLotId: lotId, isDeleted: false },
         orderBy: { splitDate: 'desc' },
         select: { splitDate: true },
       }),
       prisma.lotSplit.findFirst({
-        where: { childLotId: lotId },
+        where: { childLotId: lotId, isDeleted: false },
         orderBy: { splitDate: 'desc' },
         select: { splitDate: true },
       }),
@@ -286,8 +299,8 @@ export async function POST(
         where: { id: lotId },
         data: {
           currentWeight: hasProvidedOutputWeight ? outputWeight : inputWeight,
-          currentStage: processType.stage,
-          inventoryState: processType.stage === 'POLISHING'
+          currentStage: ownedProcessType.stage,
+          inventoryState: ownedProcessType.stage === 'POLISHING'
             ? 'READY_POLISHED'
             : isExternalVendor
               ? 'WIP'
@@ -303,7 +316,7 @@ export async function POST(
         await tx.lotCost.create({
           data: {
             lotId,
-            category: stageToCostCategory(processType.stage),
+            category: stageToCostCategory(ownedProcessType.stage),
             amount: costAmount,
             costDate: processDate,
             sourceType: 'LOT_PROCESS',

@@ -61,6 +61,7 @@ interface SplitAsChildEntry {
 interface LotProcess {
   id: number;
   processDate: string;
+  createdAt: string;
   processStartDate?: string | null;
   processEndDate?: string | null;
   status: string;
@@ -84,6 +85,12 @@ type TimelineEvent =
   | { kind: 'process'; date: string; data: LotProcess }
   | { kind: 'split-out'; date: string; data: SplitAsSourceEntry }
   | { kind: 'split-in'; date: string; data: SplitAsChildEntry };
+
+function isSameCalendarDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+}
 
 interface LotDetail {
   id: number;
@@ -225,7 +232,20 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       ...lot.splitAsSource.map((s) => ({ kind: 'split-out' as const, date: s.splitDate, data: s })),
       ...lot.splitAsChild.map((s) => ({ kind: 'split-in' as const, date: s.splitDate, data: s })),
     ];
-    return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return events.sort((a, b) => {
+      const aDate = new Date(a.date);
+      const bDate = new Date(b.date);
+      const diff = aDate.getTime() - bDate.getTime();
+      if (diff !== 0) return diff;
+
+      // If two process events happen on the same date, order by actual creation time.
+      if (a.kind === 'process' && b.kind === 'process' && isSameCalendarDay(aDate, bDate)) {
+        return new Date(a.data.createdAt).getTime() - new Date(b.data.createdAt).getTime();
+      }
+
+      return 0;
+    });
   }, [lot]);
 
   const minProcessDate = useMemo(() => {

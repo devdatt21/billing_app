@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ProcessTypeSchema } from '@/lib/validations';
+import { getUserFromHeaders } from '@/lib/auth-helpers';
 
 function parseId(id: string): number | null {
   const parsed = parseInt(id, 10);
@@ -10,13 +11,16 @@ function parseId(id: string): number | null {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid process type ID' }, { status: 400 });
 
-  const processType = await prisma.processType.findUnique({ where: { id } });
+  const user = getUserFromHeaders(request);
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+  const processType = await prisma.processType.findFirst({ where: { id, createdBy: user.userId, isDeleted: false } });
   if (!processType) return NextResponse.json({ error: 'Process type not found' }, { status: 404 });
   return NextResponse.json(processType);
 }
@@ -26,10 +30,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = getUserFromHeaders(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
     const id = parseId(params.id);
     if (!id) return NextResponse.json({ error: 'Invalid process type ID' }, { status: 400 });
 
-    const existing = await prisma.processType.findUnique({ where: { id } });
+    const existing = await prisma.processType.findFirst({ where: { id, createdBy: user.userId, isDeleted: false } });
     if (!existing) return NextResponse.json({ error: 'Process type not found' }, { status: 404 });
 
     const body = await request.json();
@@ -37,7 +44,10 @@ export async function PUT(
 
     const processType = await prisma.processType.update({
       where: { id },
-      data: validated,
+      data: {
+        ...validated,
+        updatedBy: user.userId,
+      },
     });
 
     return NextResponse.json(processType);
@@ -54,15 +64,18 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const user = getUserFromHeaders(request);
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid process type ID' }, { status: 400 });
 
-  const processType = await prisma.processType.findUnique({
-    where: { id },
-    include: { lotProcesses: { select: { id: true }, take: 1 } },
+  const processType = await prisma.processType.findFirst({
+    where: { id, createdBy: user.userId, isDeleted: false },
+    include: { lotProcesses: { where: { isDeleted: false }, select: { id: true }, take: 1 } },
   });
 
   if (!processType) return NextResponse.json({ error: 'Process type not found' }, { status: 404 });
@@ -73,6 +86,14 @@ export async function DELETE(
     );
   }
 
-  await prisma.processType.delete({ where: { id } });
+  await prisma.processType.update({
+    where: { id },
+    data: {
+      isDeleted: true,
+      deletedAt: new Date(),
+      isActive: false,
+      updatedBy: user.userId,
+    },
+  });
   return NextResponse.json({ message: 'Process type deleted successfully' });
 }

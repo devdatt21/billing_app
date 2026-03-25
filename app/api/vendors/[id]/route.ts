@@ -11,13 +11,16 @@ function parseId(id: string): number | null {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid vendor ID' }, { status: 400 });
 
-  const vendor = await prisma.vendor.findFirst({ where: { id, isDeleted: false } });
+  const user = getUserFromHeaders(request);
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+  const vendor = await prisma.vendor.findFirst({ where: { id, isDeleted: false, createdBy: user.userId } });  // Row-level security
   if (!vendor) return NextResponse.json({ error: 'Vendor not found' }, { status: 404 });
   return NextResponse.json(vendor);
 }
@@ -30,10 +33,12 @@ export async function PUT(
     const id = parseId(params.id);
     if (!id) return NextResponse.json({ error: 'Invalid vendor ID' }, { status: 400 });
 
-    const existing = await prisma.vendor.findFirst({ where: { id, isDeleted: false } });
+    const user = getUserFromHeaders(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+    const existing = await prisma.vendor.findFirst({ where: { id, isDeleted: false, createdBy: user.userId } });  // Row-level security
     if (!existing) return NextResponse.json({ error: 'Vendor not found' }, { status: 404 });
 
-    const user = getUserFromHeaders(request);
     const body = await request.json();
     const validated = VendorSchema.parse(body);
 
@@ -60,14 +65,17 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid vendor ID' }, { status: 400 });
 
+  const user = getUserFromHeaders(request);
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
   const vendor = await prisma.vendor.findFirst({
-    where: { id, isDeleted: false },
+    where: { id, isDeleted: false, createdBy: user.userId },  // Row-level security
     include: { lotProcesses: { select: { id: true }, take: 1 } },
   });
 

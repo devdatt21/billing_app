@@ -353,6 +353,8 @@ model Purchase {
   totalAmount  Decimal        @db.Decimal(18, 2)
   status       PurchaseStatus @default(DRAFT)
   remarks      String?
+  isDeleted    Boolean        @default(false)
+  deletedAt    DateTime?
   createdBy    Int?
   updatedBy    Int?
   createdAt    DateTime       @default(now())
@@ -364,6 +366,7 @@ model Purchase {
   @@index([supplierId])
   @@index([purchaseDate])
   @@index([status])
+  @@index([isDeleted])
 }
 
 model Lot {
@@ -380,6 +383,8 @@ model Lot {
   currentLocation    String?
   accumulatedCost    Decimal             @default(0) @db.Decimal(18, 2)
   isSaleReady        Boolean             @default(false)
+  isDeleted          Boolean             @default(false)
+  deletedAt          DateTime?
   notes              String?
   createdBy          Int?
   updatedBy          Int?
@@ -399,6 +404,7 @@ model Lot {
   @@index([parentLotId])
   @@index([sourcePurchaseId])
   @@index([status])
+  @@index([isDeleted])
   @@index([inventoryState])
   @@index([currentStage])
 }
@@ -411,6 +417,8 @@ model LotSplit {
   residualAfterSplit Decimal? @db.Decimal(18, 3)
   splitDate          DateTime @default(now())
   remarks            String?
+  isDeleted          Boolean  @default(false)
+  deletedAt          DateTime?
   createdBy          Int?
   createdAt          DateTime @default(now())
   sourceLot          Lot      @relation("SplitSourceLot", fields: [sourceLotId], references: [id])
@@ -419,14 +427,17 @@ model LotSplit {
   @@index([sourceLotId])
   @@index([childLotId])
   @@index([splitDate])
+  @@index([isDeleted])
 }
 
 model ProcessType {
   id           Int          @id @default(autoincrement())
-  name         String       @unique
+  name         String
   stage        ProcessStage
   sequence     Int
   isActive     Boolean      @default(true)
+  isDeleted    Boolean      @default(false)
+  deletedAt    DateTime?
   description  String?
   color        String       @default("#10b981")
   createdBy    Int?
@@ -438,6 +449,9 @@ model ProcessType {
   @@index([stage])
   @@index([sequence])
   @@index([isActive])
+  @@index([isDeleted])
+  @@index([createdBy])
+  @@unique([createdBy, name])
 }
 
 model LotProcess {
@@ -457,6 +471,8 @@ model LotProcess {
   returnedAt       DateTime?
   costAmount       Decimal       @default(0) @db.Decimal(18, 2)
   remarks          String?
+  isDeleted        Boolean       @default(false)
+  deletedAt        DateTime?
   createdBy        Int?
   updatedBy        Int?
   createdAt        DateTime      @default(now())
@@ -470,6 +486,7 @@ model LotProcess {
   @@index([vendorId])
   @@index([status])
   @@index([processDate])
+  @@index([isDeleted])
 }
 
 model LotCost {
@@ -481,6 +498,8 @@ model LotCost {
   amount      Decimal      @db.Decimal(18, 2)
   costDate    DateTime
   remarks     String?
+  isDeleted   Boolean      @default(false)
+  deletedAt   DateTime?
   createdBy   Int?
   createdAt   DateTime     @default(now())
   lot         Lot          @relation(fields: [lotId], references: [id])
@@ -488,6 +507,7 @@ model LotCost {
   @@index([lotId])
   @@index([category])
   @@index([costDate])
+  @@index([isDeleted])
 }
 
 model InventorySnapshot {

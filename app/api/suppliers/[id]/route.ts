@@ -12,13 +12,16 @@ function parseId(id: string): number | null {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid supplier ID' }, { status: 400 });
 
-  const supplier = await prisma.supplier.findFirst({ where: { id, isDeleted: false } });
+  const user = getUserFromHeaders(request);
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+  const supplier = await prisma.supplier.findFirst({ where: { id, isDeleted: false, createdBy: user.userId } });  // Row-level security
   if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
   return NextResponse.json(supplier);
 }
@@ -31,10 +34,12 @@ export async function PUT(
     const id = parseId(params.id);
     if (!id) return NextResponse.json({ error: 'Invalid supplier ID' }, { status: 400 });
 
-    const existing = await prisma.supplier.findFirst({ where: { id, isDeleted: false } });
+    const user = getUserFromHeaders(request);
+    if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
+    const existing = await prisma.supplier.findFirst({ where: { id, isDeleted: false, createdBy: user.userId } });  // Row-level security
     if (!existing) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
 
-    const user = getUserFromHeaders(request);
     const body = await request.json();
     const validated = SupplierSchema.parse(body);
 
@@ -64,14 +69,17 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const id = parseId(params.id);
   if (!id) return NextResponse.json({ error: 'Invalid supplier ID' }, { status: 400 });
 
+  const user = getUserFromHeaders(request);
+  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+
   const supplier = await prisma.supplier.findFirst({
-    where: { id, isDeleted: false },
+    where: { id, isDeleted: false, createdBy: user.userId },  // Row-level security
     include: { purchases: { select: { id: true }, take: 1 } },
   });
 

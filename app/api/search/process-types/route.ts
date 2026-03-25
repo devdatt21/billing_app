@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserFromHeaders } from '@/lib/auth-helpers';
 
 const DEFAULT_PROCESS_TYPES = [
   {
@@ -36,23 +37,28 @@ const DEFAULT_PROCESS_TYPES = [
   },
 ];
 
-async function ensureDefaultProcessTypes() {
-  const count = await prisma.processType.count({ where: { isActive: true } });
+async function ensureDefaultProcessTypes(userId: number) {
+  const count = await prisma.processType.count({ where: { createdBy: userId, isActive: true, isDeleted: false } });
   if (count > 0) return;
 
   await prisma.$transaction(
     DEFAULT_PROCESS_TYPES.map((item) =>
       prisma.processType.upsert({
-        where: { name: item.name },
+        where: { createdBy_name: { createdBy: userId, name: item.name } },
         update: {
           stage: item.stage,
           sequence: item.sequence,
           isActive: true,
+          isDeleted: false,
+          deletedAt: null,
           description: item.description,
+          updatedBy: userId,
         },
         create: {
           ...item,
           isActive: true,
+          createdBy: userId,
+          updatedBy: userId,
         },
       })
     )
@@ -61,7 +67,12 @@ async function ensureDefaultProcessTypes() {
 
 export async function GET(request: NextRequest) {
   try {
-    await ensureDefaultProcessTypes();
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    await ensureDefaultProcessTypes(user.userId);
 
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q')?.trim() || '';
@@ -69,7 +80,9 @@ export async function GET(request: NextRequest) {
 
     const processTypes = await prisma.processType.findMany({
       where: {
+        createdBy: user.userId,
         isActive: true,
+        isDeleted: false,
         ...(q
           ? {
               name: { contains: q, mode: 'insensitive' },

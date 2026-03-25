@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
 
     // Get the latest invoice number
     const latestInvoice = await prisma.invoice.findFirst({
+      where: {
+        createdBy: decoded.userId,
+      },
       orderBy: {
         createdAt: 'desc',
       },

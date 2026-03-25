@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserFromHeaders } from '@/lib/auth-helpers';
 
 function getFinancialYearParts(date = new Date()) {
   const month = date.getMonth() + 1;
@@ -28,16 +29,29 @@ function getNextSequence(current: string | null, pattern: RegExp): number {
   return Number.isNaN(value) ? 1 : value + 1;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const fy = getFinancialYearParts();
 
     const [latestPurchase, latestLot] = await Promise.all([
       prisma.purchase.findFirst({
+        where: {
+          createdBy: user.userId,
+          isDeleted: false,
+        },
         orderBy: { createdAt: 'desc' },
         select: { purchaseNo: true },
       }),
       prisma.lot.findFirst({
+        where: {
+          createdBy: user.userId,
+          isDeleted: false,
+        },
         orderBy: { createdAt: 'desc' },
         select: { lotNo: true },
       }),

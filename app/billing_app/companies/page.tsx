@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import Loader from '@/components/Loader';
 import { useToast } from '@/contexts/ToastContext';
@@ -43,13 +44,40 @@ interface CompanyFormData {
 }
 
 export default function CompaniesListPage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <CompaniesListContent />
+    </Suspense>
+  );
+}
+
+function CompaniesListContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const deepLinkHandledRef = useRef(false);
   const toast = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const page = 1;
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [returnToPath, setReturnToPath] = useState<string | null>(null);
+  const buildEmptyFormData = (isOrganization = false, name = ''): CompanyFormData => ({
+    name,
+    gstin: '',
+    phone: '',
+    email: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    stateCode: '',
+    bankName: '',
+    bankAccount: '',
+    bankBranch: '',
+    ifsc: '',
+    isOrganization,
+  });
   const [formData, setFormData] = useState<CompanyFormData>({
     name: '',
     gstin: '',
@@ -69,20 +97,25 @@ export default function CompaniesListPage() {
 
   useEffect(() => {
     fetchCompanies();
-    fetchCurrentUser();
   }, [page]);
 
-  const fetchCurrentUser = async () => {
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        setCurrentUserId(user.id);
-      }
-    } catch (error) {
-      console.error('Error fetching current user:', error);
+  useEffect(() => {
+    const shouldOpen = searchParams.get('open') === '1';
+    if (!shouldOpen || deepLinkHandledRef.current) {
+      return;
     }
-  };
+
+    const role = searchParams.get('role');
+    const prefillName = (searchParams.get('name') || '').trim();
+    const nextReturnToPath = (searchParams.get('returnTo') || '').trim();
+    const isOrganization = role === 'seller';
+
+    setEditingId(null);
+    setFormData(buildEmptyFormData(isOrganization, prefillName));
+    setReturnToPath(nextReturnToPath || null);
+    setShowForm(true);
+    deepLinkHandledRef.current = true;
+  }, [searchParams]);
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -121,8 +154,14 @@ export default function CompaniesListPage() {
 
       if (response.ok) {
         await fetchCompanies();
-        resetForm();
         toast.success(editingId ? 'Company updated successfully' : 'Company created successfully');
+
+        if (!editingId && returnToPath) {
+          router.push(returnToPath);
+          return;
+        }
+
+        resetForm();
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to save company');
@@ -178,26 +217,12 @@ export default function CompaniesListPage() {
   const resetForm = () => {
     setShowForm(false);
     setEditingId(null);
-    setFormData({
-      name: '',
-      gstin: '',
-      phone: '',
-      email: '',
-      addressLine1: '',
-      addressLine2: '',
-      city: '',
-      state: '',
-      stateCode: '',
-      bankName: '',
-      bankAccount: '',
-      bankBranch: '',
-      ifsc: '',
-      isOrganization: false,
-    });
+    setReturnToPath(null);
+    setFormData(buildEmptyFormData());
   };
 
-  const ownedCompanies = companies.filter(c => c.createdBy === currentUserId);
-  const otherCompanies = companies.filter(c => c.createdBy !== currentUserId);
+  // All companies are now owned by the current user due to API row-level filtering
+  const ownedCompanies = companies;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -217,7 +242,12 @@ export default function CompaniesListPage() {
             <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Billing • Companies</h1>
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditingId(null);
+              setReturnToPath(null);
+              setFormData(buildEmptyFormData());
+              setShowForm(true);
+            }}
             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0"
           >
             <span className="hidden sm:inline">+ Add Company</span>
@@ -484,7 +514,18 @@ export default function CompaniesListPage() {
                       className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{company.name}</h3>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-900 break-words">{company.name}</h3>
+                          {company.isOrganization ? (
+                            <span className="inline-flex items-center mt-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                              Seller
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center mt-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                              Buyer
+                            </span>
+                          )}
+                        </div>
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleEdit(company)}
@@ -506,37 +547,6 @@ export default function CompaniesListPage() {
                           </button>
                         </div>
                       </div>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        {company.gstin && (
-                          <p><span className="font-medium">GSTIN:</span> {company.gstin}</p>
-                        )}
-                        {company.phone && (
-                          <p><span className="font-medium">Phone:</span> {company.phone}</p>
-                        )}
-                        {company.email && (
-                          <p><span className="font-medium">Email:</span> {company.email}</p>
-                        )}
-                        {company.city && (
-                          <p><span className="font-medium">Location:</span> {company.city}, {company.state}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Other Companies */}
-            {otherCompanies.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Other Companies</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {otherCompanies.map((company) => (
-                    <div
-                      key={company.id}
-                      className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
-                    >
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{company.name}</h3>
                       <div className="space-y-1 text-sm text-gray-600">
                         {company.gstin && (
                           <p><span className="font-medium">GSTIN:</span> {company.gstin}</p>

@@ -83,7 +83,10 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    const whereClause = { isDeleted: false } as unknown as Prisma.CompanyWhereInput;
+    const whereClause: Prisma.CompanyWhereInput = { 
+      isDeleted: false,
+      createdBy: user.userId,  // Row-level security: user only sees their own companies
+    };
     
     const [companies, total] = await Promise.all([
       prisma.company.findMany({

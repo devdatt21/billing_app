@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
 import { sendPasswordResetConfirmation } from '@/lib/email';
 import { z } from 'zod';
+import { buildRateLimitKey, enforceRateLimit } from '@/lib/rate-limit';
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
@@ -13,6 +14,24 @@ const resetPasswordSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitKey = buildRateLimitKey(
+      'auth:reset-password',
+      request.headers.get('x-forwarded-for'),
+      request.headers.get('x-real-ip')
+    );
+    const rateLimit = enforceRateLimit(rateLimitKey, 8, 60_000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfterSeconds),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     
     // Validate input

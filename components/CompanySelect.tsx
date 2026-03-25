@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { debounce } from '@/utils/formatting';
 import { apiClient } from '@/lib/api-client';
 import Loader from '@/components/Loader';
@@ -39,6 +40,8 @@ export default function CompanySelect({
   debounceMs = 300,
   required = false,
 }: CompanySelectProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -164,6 +167,25 @@ export default function CompanySelect({
     }
   };
 
+  const handleAddCompany = () => {
+    const params = new URLSearchParams();
+    const trimmedQuery = query.trim();
+
+    params.set('open', '1');
+    if (roleFilter) {
+      params.set('role', roleFilter);
+    }
+    if (trimmedQuery) {
+      params.set('name', trimmedQuery);
+    }
+    params.set('returnTo', pathname || '/billing_app/invoices/create');
+
+    setIsOpen(false);
+    router.push(`/billing_app/companies?${params.toString()}`);
+  };
+
+  const addCompanyLabel = roleFilter === 'seller' ? 'Add seller company' : roleFilter === 'buyer' ? 'Add buyer company' : 'Add company';
+
   return (
     <div className="relative w-full" ref={dropdownRef}>
       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -239,21 +261,53 @@ export default function CompanySelect({
       {isOpen && !loading && companies.length === 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 text-center text-gray-500">
           {query.length >= 2 ? (
-            <div>No companies found. Try a different search term.</div>
+            <>
+              <div>No companies found. Try a different search term.</div>
+              <button
+                type="button"
+                onClick={handleAddCompany}
+                className="mt-3 inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                {addCompanyLabel}
+              </button>
+            </>
           ) : (
             <div>
               {roleFilter === 'seller' ? (
                 <>
                   <div className="font-medium text-gray-700 mb-2">No seller companies found</div>
                   <div className="text-sm">Add a company and mark it as &quot;This is my organization&quot;</div>
+                  <button
+                    type="button"
+                    onClick={handleAddCompany}
+                    className="mt-3 inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    {addCompanyLabel}
+                  </button>
                 </>
               ) : roleFilter === 'buyer' ? (
                 <>
                   <div className="font-medium text-gray-700 mb-2">No buyer companies found</div>
                   <div className="text-sm">Add customer/client companies (without checking &quot;This is my organization&quot;)</div>
+                  <button
+                    type="button"
+                    onClick={handleAddCompany}
+                    className="mt-3 inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    {addCompanyLabel}
+                  </button>
                 </>
               ) : (
-                <div>No companies found</div>
+                <>
+                  <div>No companies found</div>
+                  <button
+                    type="button"
+                    onClick={handleAddCompany}
+                    className="mt-3 inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    {addCompanyLabel}
+                  </button>
+                </>
               )}
             </div>
           )}

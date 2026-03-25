@@ -83,7 +83,7 @@ export async function DELETE(
 
     // Find invoice
     const invoice = await prisma.purchaseInvoice.findFirst({
-      where: { id: parseInt(params.id), isDeleted: false },
+      where: { id: parseInt(params.id), isDeleted: false, uploadedBy: decoded.userId },  // Row-level security
     });
 
     if (!invoice) {

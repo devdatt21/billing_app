@@ -2,10 +2,25 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
+
+async function verifyTokenFromRequest(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.substring(7);
+  return await verifyToken(token);
+}
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const user = await verifyTokenFromRequest(request);  // Get user from request
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
     const q = searchParams.get('q')?.trim();
@@ -17,7 +32,9 @@ export async function GET(request: NextRequest) {
 
     const where = {
       AND: [
+        { isDeleted: false },
         { status: { not: 'CLOSED' as const } },
+        { createdBy: user.userId },  // Row-level security: user only sees their own lots
         ...(status
           ? [{ status: status as 'PURCHASED' | 'IN_PROCESS' | 'AT_VENDOR' | 'READY' | 'SOLD' | 'CLOSED' | 'HOLD' }]
           : []),
