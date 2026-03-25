@@ -46,6 +46,21 @@ html.dark .theme-content .hover\:bg-gray-50:hover {
   background-color: #1e293b !important;
 }
 
+/* Make blue link-style text readable on dark backgrounds across legacy pages. */
+html.dark .theme-content a,
+html.dark .theme-content .text-blue-500,
+html.dark .theme-content .text-blue-600,
+html.dark .theme-content .text-blue-700 {
+  color: #7dd3fc !important;
+}
+
+html.dark .theme-content a:hover,
+html.dark .theme-content .hover\:text-blue-500:hover,
+html.dark .theme-content .hover\:text-blue-700:hover,
+html.dark .theme-content .hover\:text-blue-800:hover {
+  color: #bae6fd !important;
+}
+
 html.dark .theme-content input,
 html.dark .theme-content select,
 html.dark .theme-content textarea {

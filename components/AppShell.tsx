@@ -133,23 +133,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [showMasterData, setShowMasterData] = useState(true);
   const [showBilling, setShowBilling] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [themeReady, setThemeReady] = useState(false);
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem('theme');
     if (savedTheme === 'light' || savedTheme === 'dark') {
       setTheme(savedTheme);
+      setThemeReady(true);
       return;
     }
 
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setTheme(prefersDark ? 'dark' : 'light');
+    setThemeReady(true);
   }, []);
 
   useEffect(() => {
+    if (!themeReady) return;
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
     window.localStorage.setItem('theme', theme);
-  }, [theme]);
+  }, [theme, themeReady]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1023px)');
@@ -212,7 +216,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     }
                   }}
                 >
-                  Diamond ERP
+                  D-Trade
                 </Link>
               ) : (
                 <Link
@@ -220,19 +224,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
                   aria-label="Go to home"
                 >
-                  DE
+                  DT
                 </Link>
               )}
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))}
-                  className="inline-flex h-8 items-center justify-center rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:hover:bg-slate-700"
-                  aria-label="Toggle theme"
-                  title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-                >
-                  {theme === 'light' ? 'Dark' : 'Light'}
-                </button>
                 {isMobile ? (
                   <button
                     type="button"
@@ -366,15 +361,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="border-t border-gray-200 p-3 dark:border-slate-800">
             {!isCollapsed || isMobile ? (
               <>
-                <div className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-800">
-                  <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                <div className="mb-2 grid grid-cols-4 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-800">
+                  <div className="relative col-span-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
                     {getInitials(user.name)}
                     <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border border-white bg-emerald-500" />
                   </div>
-                  <div className="min-w-0 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="col-span-2 min-w-0 text-xs text-gray-500 dark:text-gray-400">
                     <p className="truncate font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
                     <p className="truncate">{user.role}</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))}
+                    className="col-span-1 inline-flex h-8 w-full items-center justify-center rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100 dark:hover:bg-slate-700"
+                    aria-label="Toggle theme"
+                    title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                  >
+                    {theme === 'light' ? 'Dark' : 'Light'}
+                  </button>
                 </div>
                 <button
                   onClick={logout}

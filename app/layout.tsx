@@ -5,8 +5,11 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import AppShell from '@/components/AppShell';
 
 export const metadata: Metadata = {
-  title: 'Billing App - Invoice Management',
-  description: 'Mobile-first invoice and billing application',
+  title: {
+    default: 'D-Trade',
+    template: '%s | D-Trade',
+  },
+  description: 'D-Trade ERP for purchase, lot genealogy, and billing operations',
 };
 
 export const viewport: Viewport = {

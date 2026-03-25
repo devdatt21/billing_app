@@ -54,15 +54,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 dark:bg-slate-950">
+      <div className="max-w-md w-full">
+        <div className="mb-6 text-center">
+          <p className="text-sm font-semibold uppercase tracking-wider text-blue-700">D-Trade</p>
+          <h2 className="mt-2 text-3xl font-extrabold text-gray-900 dark:text-gray-100">Sign in to your account</h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Manage purchases, lots, and billing in one place.</p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+
+        <form className="space-y-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900" onSubmit={handleSubmit}>
+          <div className="space-y-4">
             <div>
               <label htmlFor="email" className="sr-only">
                 Email address
@@ -73,7 +74,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:placeholder-gray-400"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -89,7 +90,7 @@ export default function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:placeholder-gray-400"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -97,7 +98,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
               >
                 {showPassword ? (
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -114,15 +115,15 @@ export default function LoginPage() {
           </div>
 
           {(error || authError) && (
-            <div className={`rounded-md p-4 ${needsVerification ? 'bg-yellow-50' : 'bg-red-50'}`}>
+            <div className={`rounded-md p-4 ${needsVerification ? 'bg-yellow-50 dark:bg-yellow-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
               <div className="flex flex-col">
-                <h3 className={`text-sm font-medium ${needsVerification ? 'text-yellow-800' : 'text-red-800'}`}>
+                <h3 className={`text-sm font-medium ${needsVerification ? 'text-yellow-800 dark:text-yellow-200' : 'text-red-800 dark:text-red-200'}`}>
                   {error || authError}
                 </h3>
                 {needsVerification && (
                   <Link
                     href={`/verify-email?email=${encodeURIComponent(email)}`}
-                    className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                    className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
                   >
                     Verify your email →
                   </Link>
@@ -143,20 +144,20 @@ export default function LoginPage() {
 
           <div className="flex flex-col space-y-2">
             <div className="text-center">
-              <a
+              <Link
                 href="/forgot-password"
-                className="font-medium text-blue-600 hover:text-blue-500"
+                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200"
               >
                 Forgot password?
-              </a>
+              </Link>
             </div>
             <div className="text-center">
-              <a
+              <Link
                 href="/signup"
-                className="font-medium text-blue-600 hover:text-blue-500"
+                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200"
               >
                 Don&apos;t have an account? Sign up
-              </a>
+              </Link>
             </div>
           </div>
         </form>

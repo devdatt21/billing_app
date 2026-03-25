@@ -319,8 +319,8 @@ export default function PurchaseInvoicesPage() {
         <div
           className={`mb-6 p-4 rounded-lg ${
             storageUsage.isNearLimit
-              ? 'bg-red-100 border-2 border-red-500 text-red-800'
-              : 'bg-blue-100 border border-blue-300 text-blue-800'
+              ? 'bg-red-100 border-2 border-red-500 text-red-800 dark:bg-red-900/30 dark:border-red-500 dark:text-red-200'
+              : 'bg-blue-100 border border-blue-300 text-blue-800 dark:bg-sky-900/30 dark:border-sky-700 dark:text-sky-200'
           }`}
         >
           <div className="flex justify-between items-center">
@@ -329,10 +329,10 @@ export default function PurchaseInvoicesPage() {
               ({storageUsage.usedPercentage.toFixed(2)}%)
             </div>
             {storageUsage.warning && (
-              <div className="font-bold">⚠️ {storageUsage.warning}</div>
+              <div className="font-bold dark:text-red-200">⚠️ {storageUsage.warning}</div>
             )}
           </div>
-          <div className="mt-2 bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div className="mt-2 bg-gray-200 rounded-full h-2 overflow-hidden dark:bg-slate-700">
             <div
               className={`h-full ${storageUsage.isNearLimit ? 'bg-red-500' : 'bg-blue-500'}`}
               style={{ width: `${Math.min(storageUsage.usedPercentage, 100)}%` }}

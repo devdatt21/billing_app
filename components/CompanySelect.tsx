@@ -188,7 +188,7 @@ export default function CompanySelect({
 
   return (
     <div className="relative w-full" ref={dropdownRef}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -202,7 +202,7 @@ export default function CompanySelect({
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
           aria-label={label}
           aria-autocomplete="list"
           aria-controls="company-listbox"
@@ -220,7 +220,7 @@ export default function CompanySelect({
         <ul
           id="company-listbox"
           role="listbox"
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-auto"
+          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-auto dark:bg-slate-900 dark:border-slate-700"
         >
           {companies.map((company, index) => (
             <li
@@ -228,12 +228,12 @@ export default function CompanySelect({
               role="option"
               aria-selected={index === selectedIndex}
               onClick={() => handleSelect(company)}
-              className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                index === selectedIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
+              className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 dark:border-slate-800 ${
+                index === selectedIndex ? 'bg-blue-50 dark:bg-slate-800' : 'hover:bg-gray-50 dark:hover:bg-slate-800'
               }`}
             >
-              <div className="font-medium text-gray-900">{company.name}</div>
-              <div className="flex flex-wrap gap-2 mt-1 text-sm text-gray-600">
+              <div className="font-medium text-gray-900 dark:text-gray-100">{company.name}</div>
+              <div className="flex flex-wrap gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
                 {company.gstin && (
                   <span className="inline-flex items-center">
                     <span className="font-semibold mr-1">GSTIN:</span>
@@ -259,7 +259,7 @@ export default function CompanySelect({
       )}
 
       {isOpen && !loading && companies.length === 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 text-center text-gray-500">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 text-center text-gray-500 dark:bg-slate-900 dark:border-slate-700 dark:text-gray-400">
           {query.length >= 2 ? (
             <>
               <div>No companies found. Try a different search term.</div>
@@ -275,7 +275,7 @@ export default function CompanySelect({
             <div>
               {roleFilter === 'seller' ? (
                 <>
-                  <div className="font-medium text-gray-700 mb-2">No seller companies found</div>
+                  <div className="font-medium text-gray-700 mb-2 dark:text-gray-200">No seller companies found</div>
                   <div className="text-sm">Add a company and mark it as &quot;This is my organization&quot;</div>
                   <button
                     type="button"
@@ -287,7 +287,7 @@ export default function CompanySelect({
                 </>
               ) : roleFilter === 'buyer' ? (
                 <>
-                  <div className="font-medium text-gray-700 mb-2">No buyer companies found</div>
+                  <div className="font-medium text-gray-700 mb-2 dark:text-gray-200">No buyer companies found</div>
                   <div className="text-sm">Add customer/client companies (without checking &quot;This is my organization&quot;)</div>
                   <button
                     type="button"

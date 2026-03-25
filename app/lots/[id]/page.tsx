@@ -363,9 +363,9 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (mustLockInputToCurrentWeight && lot) {
-      setProcInputWeight(String(lot.currentWeight));
+      setProcInputWeight(String(displayCurrentWeight));
     }
-  }, [mustLockInputToCurrentWeight, lot]);
+  }, [mustLockInputToCurrentWeight, lot, displayCurrentWeight]);
 
   const startEditProcess = (process: LotProcess) => {
     if (process.status !== 'IN_PROGRESS') {
@@ -437,8 +437,8 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       return;
     }
 
-    if (mustLockInputToCurrentWeight && Number(procInputWeight || 0) !== Number(lot.currentWeight)) {
-      toast.warning(`Input weight must match current lot weight (${formatNumber(lot.currentWeight)} cts)`);
+    if (mustLockInputToCurrentWeight && Number(procInputWeight || 0) !== Number(displayCurrentWeight)) {
+      toast.warning(`Input weight must match current lot weight (${formatNumber(displayCurrentWeight)} cts)`);
       return;
     }
 

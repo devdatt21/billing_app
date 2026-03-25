@@ -116,33 +116,33 @@ export default function InvoiceEditorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm dark:bg-slate-900 dark:border-slate-800">
         <div className="px-3 sm:px-4 py-3 flex items-center gap-2 min-w-0">
           <button
             type="button"
             onClick={() => router.back()}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 dark:hover:bg-slate-800"
             aria-label="Go back"
           >
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Billing • Create Invoice</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate dark:text-gray-100">Billing • Create Invoice</h1>
         </div>
       </header>
 
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-4 pb-6">
         {/* Invoice Details */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Invoice Details</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 dark:bg-slate-900 dark:border-slate-800">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-gray-100">Invoice Details</h2>
           
           <div className="grid grid-cols-1 gap-4">
             {/* Document Type/Heading */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Document Type <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -154,7 +154,7 @@ export default function InvoiceEditorPage() {
                     className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                       heading === option
                         ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500 dark:bg-slate-800 dark:text-gray-200 dark:border-slate-700 dark:hover:border-blue-400'
                     }`}
                   >
                     {option === 'CUSTOM' ? 'Custom' : option}
@@ -167,14 +167,14 @@ export default function InvoiceEditorPage() {
                   value={customHeading}
                   onChange={(e) => setCustomHeading(e.target.value.toUpperCase())}
                   placeholder="Enter custom heading (e.g., PROFORMA INVOICE)"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
                   required
                 />
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Invoice Number <span className="text-red-500">*</span>
               </label>
               <input
@@ -182,22 +182,22 @@ export default function InvoiceEditorPage() {
                 value={invoiceNo}
                 onChange={(e) => setInvoiceNo(e.target.value)}
                 placeholder={loadingInvoiceNo ? "Loading..." : "INV-001"}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
                 disabled={loadingInvoiceNo}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">Auto-generated. You can edit if needed.</p>
+              <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">Auto-generated. You can edit if needed.</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100"
                 required
               />
             </div>
@@ -205,7 +205,7 @@ export default function InvoiceEditorPage() {
         </div>
 
         {/* Seller */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 dark:bg-slate-900 dark:border-slate-800">
           <CompanySelect
             value={seller}
             onChange={setSeller}
@@ -217,7 +217,7 @@ export default function InvoiceEditorPage() {
         </div>
 
         {/* Buyer */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 dark:bg-slate-900 dark:border-slate-800">
           <CompanySelect
             value={buyer}
             onChange={setBuyer}
@@ -229,17 +229,17 @@ export default function InvoiceEditorPage() {
         </div>
 
         {/* Line Items */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 dark:bg-slate-900 dark:border-slate-800">
           <InvoiceLineEditor lines={lines} onChange={setLines} />
         </div>
 
         {/* Tax Settings */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Tax Settings</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 dark:bg-slate-900 dark:border-slate-800">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-gray-100">Tax Settings</h2>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 SGST % <span className="text-red-500">*</span>
               </label>
               <input
@@ -248,7 +248,7 @@ export default function InvoiceEditorPage() {
                 value={sgstPct}
                 onChange={(e) => setSgstPct(e.target.value)}
                 placeholder="0.75"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
                 required
                 min="0"
                 max="100"
@@ -256,7 +256,7 @@ export default function InvoiceEditorPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 CGST % <span className="text-red-500">*</span>
               </label>
               <input
@@ -265,7 +265,7 @@ export default function InvoiceEditorPage() {
                 value={cgstPct}
                 onChange={(e) => setCgstPct(e.target.value)}
                 placeholder="0.75"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
                 required
                 min="0"
                 max="100"
@@ -275,12 +275,12 @@ export default function InvoiceEditorPage() {
         </div>
 
         {/* Optional Fields */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 dark:bg-slate-900 dark:border-slate-800">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-gray-100">Additional Information</h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Delivery Note
               </label>
               <input
@@ -288,12 +288,12 @@ export default function InvoiceEditorPage() {
                 value={deliveryNote}
                 onChange={(e) => setDeliveryNote(e.target.value)}
                 placeholder="Optional delivery note"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Terms & Conditions
               </label>
               <textarea
@@ -301,7 +301,7 @@ export default function InvoiceEditorPage() {
                 onChange={(e) => setTerms(e.target.value)}
                 placeholder="Optional terms and conditions"
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
               />
             </div>
           </div>
@@ -323,12 +323,12 @@ export default function InvoiceEditorPage() {
         </div>
 
         {/* Sticky Action Bar */}
-        <div className="sticky bottom-0 z-30 border border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm rounded-lg">
+        <div className="sticky bottom-0 z-30 border border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm rounded-lg dark:border-slate-700 dark:bg-slate-900/95">
           <div className="px-4 py-3 flex gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 active:bg-gray-100"
+            className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 active:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:active:bg-slate-700"
           >
             Cancel
           </button>

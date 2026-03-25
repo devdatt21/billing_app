@@ -77,7 +77,7 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Line Items</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Line Items</h3>
         <button
           type="button"
           onClick={addLine}
@@ -91,17 +91,17 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
         {lines.map((line, index) => (
           <div
             key={line.id || index}
-            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm dark:bg-slate-900 dark:border-slate-800"
           >
             {/* Line number and controls */}
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-600">Item #{index + 1}</span>
+              <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">Item #{index + 1}</span>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => moveLine(index, 'up')}
                   disabled={index === 0}
-                  className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed dark:text-gray-400 dark:hover:text-gray-200"
                   aria-label="Move up"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +112,7 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
                   type="button"
                   onClick={() => moveLine(index, 'down')}
                   disabled={index === lines.length - 1}
-                  className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed dark:text-gray-400 dark:hover:text-gray-200"
                   aria-label="Move down"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +135,7 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
 
             {/* Description */}
             <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 Description <span className="text-red-500">*</span>
               </label>
               <input
@@ -143,27 +143,27 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
                 value={line.description}
                 onChange={(e) => handleLineChange(index, 'description', e.target.value)}
                 placeholder="Item description"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
                 required
               />
             </div>
 
             {/* HSN Code */}
             <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">HSN Code</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">HSN Code</label>
               <input
                 type="text"
                 value={line.hsn || ''}
                 onChange={(e) => handleLineChange(index, 'hsn', e.target.value)}
                 placeholder="71023910"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
               />
             </div>
 
             {/* Qty, Unit, Rate - Stacked layout */}
             <div className="space-y-3 mb-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                   Qty <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -172,23 +172,23 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
                   value={line.qty}
                   onChange={(e) => handleLineChange(index, 'qty', e.target.value)}
                   placeholder="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
                   required
                   min="0"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Unit</label>
                 <input
                   type="text"
                   value={line.unit || ''}
                   onChange={(e) => handleLineChange(index, 'unit', e.target.value)}
                   placeholder="Pcs/Cts"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                   Rate <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -207,7 +207,7 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
                     }
                   }}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100 dark:placeholder-gray-400"
                   required
                   min="0"
                 />
@@ -216,12 +216,12 @@ export default function InvoiceLineEditor({ lines, onChange }: InvoiceLineEditor
 
             {/* Amount (read-only) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Amount</label>
               <input
                 type="text"
                 value={line.amount}
                 readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold dark:bg-slate-800 dark:border-slate-700 dark:text-gray-200"
               />
             </div>
           </div>
