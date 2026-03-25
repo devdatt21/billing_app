@@ -47,6 +47,7 @@ const navItems: NavItem[] = [
       { label: 'Purchase Invoices', href: '/billing_app/purchase-invoices' },
     ],
   },
+  { kind: 'link', label: 'Clean Slate', href: '/billing_app/clean-slate' },
 ];
 
 const publicRoutes = new Set([
