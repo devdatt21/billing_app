@@ -8,6 +8,7 @@ import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
 import SupplierSelect, { SupplierOption } from '@/components/SupplierSelect';
 import { useToast } from '@/contexts/ToastContext';
+import { FormAndTableSkeleton } from '@/components/PageSkeleton';
 
 interface PurchaseRow {
   id: number;
@@ -217,30 +218,35 @@ export default function PurchasesPage() {
     }
   };
 
-  if (isLoading || loadingPage) {
-    return <Loader fullScreen text="Loading purchases..." />;
-  }
-
-  if (!user) {
+  if (!user && !isLoading) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="px-4 py-3 flex items-center gap-3">
-          <Link href="/" className="p-1.5 hover:bg-gray-100 rounded-lg" aria-label="Back to Home">
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <h1 className="text-xl font-bold text-gray-900">Purchase Intake</h1>
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
+        <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-1.5 hover:bg-gray-100 rounded-lg" aria-label="Back to Home">
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <h1 className="text-lg font-bold text-gray-900 sm:text-xl">Purchase Intake</h1>
+          </div>
+          <p className="hidden max-w-3xl truncate text-sm text-gray-600 md:block">
+            Record new purchases and track lot intake through receiving and posting stages.
+          </p>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <form onSubmit={onSubmit} className="bg-white border border-gray-200 rounded-lg p-5 space-y-4 xl:col-span-1 h-fit">
-          <h2 className="font-semibold text-gray-900">New Purchase</h2>
+      <main className="max-w-7xl mx-auto p-4 sm:p-6">
+        {(isLoading || loadingPage) ? (
+          <FormAndTableSkeleton />
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <form onSubmit={onSubmit} className="bg-white border border-gray-200 rounded-lg p-5 space-y-4 xl:col-span-1 h-fit">
+              <h2 className="font-semibold text-gray-900">New Purchase</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -441,7 +447,9 @@ export default function PurchasesPage() {
               </div>
             </div>
           )}
-        </section>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -101,6 +101,15 @@ export default function EntitySelect<T extends NamedEntity>({
   }, [value, isOpen]);
 
   const handleSelect = (item: T) => {
+    // Clicking the same selected option again will clear the selection.
+    if (value && value.id === item.id) {
+      onChange(null);
+      setQuery('');
+      setIsOpen(false);
+      setSelectedIndex(-1);
+      return;
+    }
+
     onChange(item);
     setQuery(item.name);
     setIsOpen(false);
@@ -159,6 +168,18 @@ export default function EntitySelect<T extends NamedEntity>({
             }
           }}
           onFocus={() => {
+            setIsOpen(true);
+            if (!query) {
+              fetchItems('');
+            }
+          }}
+          onClick={() => {
+            // Toggle dropdown when clicking the field repeatedly.
+            if (isOpen) {
+              setIsOpen(false);
+              setSelectedIndex(-1);
+              return;
+            }
             setIsOpen(true);
             if (!query) {
               fetchItems('');

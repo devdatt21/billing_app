@@ -128,6 +128,24 @@ export const CreatePurchaseSchema = z.object({
   status: z.enum(['DRAFT', 'RECEIVED', 'POSTED', 'CANCELLED']).optional(),
 });
 
+export const ExpenseTypeSchema = z.object({
+  name: z.string().trim().min(1, 'Expense type is required').max(100, 'Expense type is too long'),
+});
+
+export const ExpenseSchema = z.object({
+  expenseDate: z.string().or(z.date()).transform((val) => {
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+  amount: z.union([z.string(), z.number()]).transform((v) => String(v)),
+  description: z.string().trim().min(1, 'Description is required').max(500, 'Description is too long'),
+  remarks: z.string().optional().nullable(),
+  expenseTypeId: z.number().int().positive().optional(),
+  expenseTypeName: z.string().trim().optional(),
+  purchaseId: z.number().int().positive().optional().nullable(),
+  lotId: z.number().int().positive().optional().nullable(),
+});
+
 export type CreateInvoiceInput = z.infer<typeof CreateInvoiceSchema>;
 export type CompanyInput = z.infer<typeof CompanySchema>;
 export type SupplierInput = z.infer<typeof SupplierSchema>;
@@ -135,3 +153,5 @@ export type VendorInput = z.infer<typeof VendorSchema>;
 export type CustomerInput = z.infer<typeof CustomerSchema>;
 export type ProcessTypeInput = z.infer<typeof ProcessTypeSchema>;
 export type CreatePurchaseInput = z.infer<typeof CreatePurchaseSchema>;
+export type ExpenseTypeInput = z.infer<typeof ExpenseTypeSchema>;
+export type ExpenseInput = z.infer<typeof ExpenseSchema>;

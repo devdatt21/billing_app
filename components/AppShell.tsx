@@ -28,6 +28,7 @@ type NavItem =
 const navItems: NavItem[] = [
   { kind: 'link', label: 'Purchase Intake', href: '/purchases' },
   { kind: 'link', label: 'Lots & Genealogy', href: '/lots' },
+  { kind: 'link', label: 'Expenses', href: '/expenses' },
   {
     kind: 'group',
     label: 'ERP Master Data',
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
       { label: 'Suppliers', href: '/masters/suppliers' },
       { label: 'Vendors', href: '/masters/vendors' },
       { label: 'Customers', href: '/masters/customers' },
+      { label: 'Employees', href: '/masters/employees' },
       { label: 'Process Flow', href: '/masters/process-types' },
     ],
   },
@@ -206,45 +208,68 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }`}
       >
         <div className="flex h-full flex-col">
-          <div className="border-b border-gray-200 bg-gradient-to-br from-white via-blue-50 to-cyan-50 px-3 py-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
-            <div className="flex items-center justify-between gap-2">
+          <div className="border-b border-gray-200 bg-gradient-to-tl from-white via-sky-100 to-cyan-100 px-3 py-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-800 dark:to-cyan-900/40">
+            <div
+              className={`flex items-center gap-2 h-10 ${
+                !isMobile && isCollapsed ? 'justify-center' : 'justify-between'
+              }`}
+            >
               {!isCollapsed || isMobile ? (
-                <Link
-                  href="/"
-                  className="inline-flex items-center"
-                  onClick={() => {
-                    if (isMobile) {
-                      setMobileNavOpen(false);
-                    }
-                  }}
-                  aria-label="carbonshine home"
-                >
-                  <Image
-                    src="/carbonshinelogo-removebg.png"
-                    alt="carbonshine"
-                    width={220}
-                    height={48}
-                    priority
-                    className="h-10 w-auto"
-                  />
-                </Link>
+                <>
+                  <Link
+                    href="/"
+                    className="inline-flex items-center"
+                    onClick={() => {
+                      if (isMobile) {
+                        setMobileNavOpen(false);
+                      }
+                    }}
+                    aria-label="carbonshine home"
+                  >
+                    <Image
+                      src="/carbonshinelogo-removebg.png"
+                      alt="carbonshine"
+                      width={220}
+                      height={48}
+                      priority
+                      className="h-10 w-auto"
+                    />
+                  </Link>
+                  {/* Collapse button when expanded (desktop only) */}
+                  {!isMobile && (
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsCollapsed(true)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:hover:bg-slate-700"
+                        aria-label="Collapse sidebar"
+                        title="Collapse sidebar"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
-                <Link
-                  href="/"
-                  className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1 dark:bg-slate-800"
-                  aria-label="Go to home"
+                <button
+                  type="button"
+                  className="mx-auto flex h-12 w-full items-center justify-center cursor-pointer"
+                  aria-label="Expand sidebar"
+                  onClick={() => setIsCollapsed(false)}
                 >
                   <Image
                     src="/carbonshinediamondlogo-removebg.png"
-                    alt="carbonshine icon"
-                    width={24}
-                    height={24}
-                    className="h-5 w-5 object-contain"
+                    alt="favicon diamond"
+                    width={44}
+                    height={44}
+                    className="h-11 w-11 object-contain"
                   />
-                </Link>
+                </button>
               )}
-              <div className="flex items-center gap-2">
-                {isMobile ? (
+              {isMobile ? (
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setMobileNavOpen(false)}
@@ -253,26 +278,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   >
                     X
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsCollapsed((prev) => !prev)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100 dark:hover:bg-slate-700"
-                    aria-label={isCollapsed ? 'Unfold navigation' : 'Fold navigation'}
-                    title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                  >
-                    {isCollapsed ? (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    ) : (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    )}
-                  </button>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -384,7 +391,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="col-span-2 min-w-0 text-xs text-gray-500 dark:text-gray-400">
                     <p className="truncate font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
-                    <p className="truncate">{user.role}</p>
+                    <p className="truncate">Owner</p>
                   </div>
                   <button
                     type="button"

@@ -38,44 +38,52 @@ export async function GET(request: NextRequest) {
 
     const fy = getFinancialYearParts();
 
-    const [latestPurchase, latestLot] = await Promise.all([
-      prisma.purchase.findFirst({
-        where: {
-          createdBy: user.userId,
-          isDeleted: false,
+
+    // Find the highest purchaseNo and lotNo for the current FY, including soft-deleted
+    const purchasePattern = new RegExp(`^PUR/${fy.start}-${fy.end}/(\\d+)$`);
+    const lotPattern = new RegExp(`^LOT/${fy.start}-${fy.end}/(\\d+)$`);
+
+    // Get all lotNos for this FY (including soft-deleted)
+    const allLots = await prisma.lot.findMany({
+      where: {
+        createdBy: user.userId,
+        lotNo: {
+          startsWith: `LOT/${fy.start}-${fy.end}/`,
         },
-        orderBy: { createdAt: 'desc' },
-        select: { purchaseNo: true },
-      }),
-      prisma.lot.findFirst({
-        where: {
-          createdBy: user.userId,
-          isDeleted: false,
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { lotNo: true },
-      }),
-    ]);
+      },
+      select: { lotNo: true },
+    });
 
-    const purchasePattern = /^PUR\/(\d{2})-(\d{2})\/(\d+)$/;
-    const lotPattern = /^LOT\/(\d{2})-(\d{2})\/(\d+)$/;
-
-    let purchaseSeq = 1;
-    let lotSeq = 1;
-
-    if (latestPurchase?.purchaseNo) {
-      const match = latestPurchase.purchaseNo.match(purchasePattern);
+    let maxLotSeq = 0;
+    for (const lot of allLots) {
+      const match = lot.lotNo.match(/^LOT\/(\d{2})-(\d{2})\/(\d+)$/);
       if (match && match[1] === fy.start && match[2] === fy.end) {
-        purchaseSeq = getNextSequence(latestPurchase.purchaseNo, purchasePattern);
+        const seq = parseInt(match[3], 10);
+        if (!isNaN(seq) && seq > maxLotSeq) maxLotSeq = seq;
       }
     }
+    const lotSeq = maxLotSeq + 1;
 
-    if (latestLot?.lotNo) {
-      const match = latestLot.lotNo.match(lotPattern);
+    // Get all purchaseNos for this FY (including soft-deleted)
+    const allPurchases = await prisma.purchase.findMany({
+      where: {
+        createdBy: user.userId,
+        purchaseNo: {
+          startsWith: `PUR/${fy.start}-${fy.end}/`,
+        },
+      },
+      select: { purchaseNo: true },
+    });
+
+    let maxPurchaseSeq = 0;
+    for (const purchase of allPurchases) {
+      const match = purchase.purchaseNo.match(/^PUR\/(\d{2})-(\d{2})\/(\d+)$/);
       if (match && match[1] === fy.start && match[2] === fy.end) {
-        lotSeq = getNextSequence(latestLot.lotNo, lotPattern);
+        const seq = parseInt(match[3], 10);
+        if (!isNaN(seq) && seq > maxPurchaseSeq) maxPurchaseSeq = seq;
       }
     }
+    const purchaseSeq = maxPurchaseSeq + 1;
 
     const purchaseNo = `PUR/${fy.start}-${fy.end}/${purchaseSeq.toString().padStart(2, '0')}`;
     const lotNo = `LOT/${fy.start}-${fy.end}/${lotSeq.toString().padStart(4, '0')}`;

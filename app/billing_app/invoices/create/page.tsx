@@ -117,24 +117,28 @@ export default function InvoiceEditorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm dark:bg-slate-900 dark:border-slate-800">
-        <div className="px-3 sm:px-4 py-3 flex items-center gap-2 min-w-0">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 dark:hover:bg-slate-800"
-            aria-label="Go back"
-          >
-            <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate dark:text-gray-100">Billing • Create Invoice</h1>
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-800">
+        <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 dark:hover:bg-slate-800"
+              aria-label="Go back"
+            >
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">Billing • Create Invoice</h1>
+          </div>
+          <p className="hidden max-w-2xl truncate text-sm text-gray-600 dark:text-gray-400 md:block">
+            Create new invoices with tax calculations and line items.
+          </p>
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-4 pb-6">
+      <form onSubmit={handleSubmit} className="max-w-6xl mx-auto p-3 sm:p-4 pb-24">
         {/* Invoice Details */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 dark:bg-slate-900 dark:border-slate-800">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-gray-100">Invoice Details</h2>
@@ -323,22 +327,31 @@ export default function InvoiceEditorPage() {
         </div>
 
         {/* Sticky Action Bar */}
-        <div className="sticky bottom-0 z-30 border border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm rounded-lg dark:border-slate-700 dark:bg-slate-900/95">
-          <div className="px-4 py-3 flex gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 active:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:active:bg-slate-700"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Creating...' : 'Create Invoice'}
-          </button>
+        <div
+          className="sticky bottom-0 z-30 border-t border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95"
+          style={{
+            left: 'unset',
+            right: 'unset',
+            width: '100%',
+            marginLeft: 'unset',
+            marginRight: 'unset',
+          }}
+        >
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 flex gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex-1 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm sm:text-base hover:bg-gray-50 active:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-800 dark:active:bg-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg font-medium text-sm sm:text-base hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Creating...' : 'Create Invoice'}
+            </button>
           </div>
         </div>
       </form>

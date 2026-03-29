@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useEffect } from 'react';
-import Loader from '@/components/Loader';
+import { DashboardPageSkeleton } from '@/components/PageSkeleton';
 
 const throughputBars = [56, 72, 64, 88, 76, 92, 68];
 const revenueBars = [42, 58, 49, 73, 65, 79, 70, 84];
@@ -45,17 +45,17 @@ export default function Home() {
     }
   }, [user, isLoading, router]);
 
-  if (isLoading) {
-    return <Loader fullScreen text="Loading..." />;
-  }
-
-  if (!user) {
+  if (!user && !isLoading) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {isLoading ? (
+          <DashboardPageSkeleton />
+        ) : (
+          <>
         <section className="bg-white rounded-lg shadow-md border border-gray-200 p-6 sm:p-8 mb-6">
           <Image
             src="/carbonshinelogo-removebg.png"
@@ -65,7 +65,7 @@ export default function Home() {
             priority
             className="h-10 w-auto"
           />
-          <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-gray-900">Welcome back, {user.name}</h1>
+          <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-gray-900">Welcome back, {user?.name || "User"}</h1>
           <p className="mt-3 max-w-3xl text-sm sm:text-base text-gray-600">
             This is the ERP landing dashboard. Charts are dummy placeholders for now and will be connected to live purchase, lot,
             billing, and process data once the ERP modules are fully ready.
@@ -134,6 +134,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+          </>
+        )}
       </main>
     </div>
   );

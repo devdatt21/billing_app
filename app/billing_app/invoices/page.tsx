@@ -44,9 +44,9 @@ export default function InvoicesListPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
+        <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+          <div className="flex items-center gap-3">
             <Link
               href="/billing_app"
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -56,8 +56,11 @@ export default function InvoicesListPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Billing • Invoices</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900">Billing • Invoices</h1>
           </div>
+          <p className="hidden max-w-2xl truncate text-sm text-gray-600 md:block">
+            Browse, search, and manage invoice records for sales.
+          </p>
           <Link
             href="/billing_app/invoices/create"
             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0"

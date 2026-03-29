@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
+import { ListPageSkeleton } from '@/components/PageSkeleton';
 
 interface LotRow {
   id: number;
@@ -115,83 +115,88 @@ export default function LotsPage() {
     }
   };
 
-  if (isLoading || loading) {
-    return <Loader fullScreen text="Loading lots..." />;
-  }
-
-  if (!user) {
+  if (!user && !isLoading) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link href="/" className="p-1.5 hover:bg-gray-100 rounded-lg" aria-label="Back to Home">
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <h1 className="text-xl font-bold text-gray-900">Lots</h1>
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
+        <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-1.5 hover:bg-gray-100 rounded-lg" aria-label="Back to Home">
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <h1 className="text-lg font-bold text-gray-900 sm:text-xl">Lots</h1>
+          </div>
+          <p className="hidden max-w-3xl truncate text-sm text-gray-600 md:block">
+            Track lot genealogy through purchase, split, and process activities.
+          </p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
-        <section className="bg-white border border-gray-200 rounded-lg p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          <input
-            value={filters.q}
-            onChange={(e) => setFilters((prev) => ({ ...prev, q: e.target.value }))}
-            className="w-full px-3 py-2 border rounded"
-            placeholder="Search lot no / purchase no"
-          />
+        {(isLoading || loading) ? (
+          <ListPageSkeleton />
+        ) : (
+          <>
+            <section className="bg-white border border-gray-200 rounded-lg p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+              <input
+                value={filters.q}
+                onChange={(e) => setFilters((prev) => ({ ...prev, q: e.target.value }))}
+                className="w-full px-3 py-2 border rounded"
+                placeholder="Search lot no / purchase no"
+              />
 
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-            className="w-full px-3 py-2 border rounded"
-          >
-            <option value="">All status</option>
-            <option value="PURCHASED">PURCHASED</option>
-            <option value="IN_PROCESS">IN_PROCESS</option>
-            <option value="AT_VENDOR">AT_VENDOR</option>
-            <option value="READY">READY</option>
-            <option value="SOLD">SOLD</option>
-            <option value="CLOSED">CLOSED</option>
-            <option value="HOLD">HOLD</option>
-          </select>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+                className="w-full px-3 py-2 border rounded"
+              >
+                <option value="">All status</option>
+                <option value="PURCHASED">PURCHASED</option>
+                <option value="IN_PROCESS">IN_PROCESS</option>
+                <option value="AT_VENDOR">AT_VENDOR</option>
+                <option value="READY">READY</option>
+                <option value="SOLD">SOLD</option>
+                <option value="CLOSED">CLOSED</option>
+                <option value="HOLD">HOLD</option>
+              </select>
 
-          <select
-            value={filters.stage}
-            onChange={(e) => setFilters((prev) => ({ ...prev, stage: e.target.value }))}
-            className="w-full px-3 py-2 border rounded"
-          >
-            <option value="">All stages</option>
-            <option value="CUTTING">CUTTING</option>
-            <option value="SARIN_MEASUREMENT">SARIN_MEASUREMENT</option>
-            <option value="POLISHING">POLISHING</option>
-            <option value="READY_INVENTORY">READY_INVENTORY</option>
-            <option value="SOLD">SOLD</option>
-          </select>
+              <select
+                value={filters.stage}
+                onChange={(e) => setFilters((prev) => ({ ...prev, stage: e.target.value }))}
+                className="w-full px-3 py-2 border rounded"
+              >
+                <option value="">All stages</option>
+                <option value="CUTTING">CUTTING</option>
+                <option value="SARIN_MEASUREMENT">SARIN_MEASUREMENT</option>
+                <option value="POLISHING">POLISHING</option>
+                <option value="READY_INVENTORY">READY_INVENTORY</option>
+                <option value="SOLD">SOLD</option>
+              </select>
 
-          <select
-            value={filters.sourceType}
-            onChange={(e) => setFilters((prev) => ({ ...prev, sourceType: e.target.value }))}
-            className="w-full px-3 py-2 border rounded"
-          >
-            <option value="">All sources</option>
-            <option value="PURCHASE">PURCHASE</option>
-            <option value="SPLIT">SPLIT</option>
-            <option value="ADJUSTMENT">ADJUSTMENT</option>
-          </select>
-        </section>
+              <select
+                value={filters.sourceType}
+                onChange={(e) => setFilters((prev) => ({ ...prev, sourceType: e.target.value }))}
+                className="w-full px-3 py-2 border rounded"
+              >
+                <option value="">All sources</option>
+                <option value="PURCHASE">PURCHASE</option>
+                <option value="SPLIT">SPLIT</option>
+                <option value="ADJUSTMENT">ADJUSTMENT</option>
+              </select>
+            </section>
 
-        <section className="bg-white border border-gray-200 rounded-lg p-4">
-          {items.length === 0 ? (
-            <p className="text-gray-600">No lots found.</p>
-          ) : (
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="inline-block min-w-full px-4 sm:px-0">
-                <table className="w-full min-w-[700px] text-xs sm:text-sm">
+            <section className="bg-white border border-gray-200 rounded-lg p-4">
+              {items.length === 0 ? (
+                <p className="text-gray-600">No lots found.</p>
+              ) : (
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full px-4 sm:px-0">
+                    <table className="w-full min-w-[700px] text-xs sm:text-sm">
                   <thead>
                     <tr className="text-left border-b bg-gray-50">
                       <th className="py-2 px-2 sm:px-3">Lot No</th>
@@ -242,7 +247,9 @@ export default function LotsPage() {
               </div>
             </div>
           )}
-        </section>
+            </section>
+          </>
+        )}
       </main>
 
       {confirmDeleteLot ? (

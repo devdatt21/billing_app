@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
+import { DetailPageSkeleton } from '@/components/PageSkeleton';
 import { useToast } from '@/contexts/ToastContext';
 
 interface ParentLot {
@@ -542,9 +542,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     }
   };
 
-  if (loading) return <Loader fullScreen text="Loading lot details..." />;
-
-  if (error || !lot) {
+  if (!loading && (error || !lot)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center bg-white border rounded-lg p-6 max-w-md w-full">
@@ -559,8 +557,8 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
+        <div className="flex min-h-16 items-center gap-3 px-4">
           <button onClick={() => router.back()} className="p-1.5 hover:bg-gray-100 rounded-lg" aria-label="Go back">
             <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -570,33 +568,37 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <section className="bg-white border border-gray-200 rounded-lg p-5 xl:col-span-2 space-y-4">
-          <div>
-            <p className="text-sm text-gray-500">Lot No</p>
-            <p className="text-lg font-semibold text-gray-900">{lot.lotNo}</p>
-          </div>
+      <main className="max-w-7xl mx-auto p-4 sm:p-6">
+        {loading ? (
+          <DetailPageSkeleton />
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <section className="bg-white border border-gray-200 rounded-lg p-5 xl:col-span-2 space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Lot No</p>
+                <p className="text-lg font-semibold text-gray-900">{lot!.lotNo}</p>
+              </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div><p className="text-gray-500">Initial</p><p className="font-semibold">{formatNumber(lot.initialWeight)} cts</p></div>
+            <div><p className="text-gray-500">Initial</p><p className="font-semibold">{formatNumber(lot!.initialWeight)} cts</p></div>
             <div><p className="text-gray-500">Current</p><p className="font-semibold">{formatNumber(displayCurrentWeight)} cts</p></div>
-            <div><p className="text-gray-500">Status</p><p className="font-semibold">{lot.status}</p></div>
-            <div><p className="text-gray-500">Stage</p><p className="font-semibold">{lot.currentStage}</p></div>
+            <div><p className="text-gray-500">Status</p><p className="font-semibold">{lot!.status}</p></div>
+            <div><p className="text-gray-500">Stage</p><p className="font-semibold">{lot!.currentStage}</p></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div>
               <p className="text-gray-500">Source Purchase</p>
               <p className="font-semibold">
-                {lot.sourcePurchase ? `${lot.sourcePurchase.purchaseNo} (${lot.sourcePurchase.supplier?.name || '-'})` : '-'}
+                {lot!.sourcePurchase ? `${lot!.sourcePurchase.purchaseNo} (${lot!.sourcePurchase.supplier?.name || '-'})` : '-'}
               </p>
             </div>
-            <div><p className="text-gray-500">Inventory State</p><p className="font-semibold">{lot.inventoryState}</p></div>
-            <div><p className="text-gray-500">Current Location</p><p className="font-semibold">{lot.currentLocation || '-'}</p></div>
-            <div><p className="text-gray-500">Accumulated Cost</p><p className="font-semibold">INR {Number(lot.accumulatedCost).toLocaleString('en-IN')}</p></div>
+            <div><p className="text-gray-500">Inventory State</p><p className="font-semibold">{lot!.inventoryState}</p></div>
+            <div><p className="text-gray-500">Current Location</p><p className="font-semibold">{lot!.currentLocation || '-'}</p></div>
+            <div><p className="text-gray-500">Accumulated Cost</p><p className="font-semibold">INR {Number(lot!.accumulatedCost).toLocaleString('en-IN')}</p></div>
             <div><p className="text-gray-500">Parent Lot</p>
               <p className="font-semibold">
-                {lot.parentLot ? <Link className="text-blue-600" href={`/lots/${lot.parentLot.id}`}>{lot.parentLot.lotNo}</Link> : '-'}
+                {lot!.parentLot ? <Link className="text-blue-600" href={`/lots/${lot!.parentLot.id}`}>{lot!.parentLot.lotNo}</Link> : '-'}
               </p>
             </div>
           </div>
@@ -604,20 +606,20 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           <div>
             <h2 className="font-semibold text-gray-900 mb-2">Lineage Tree</h2>
             <div className="rounded-lg border border-gray-200 p-3 text-sm bg-gray-50">
-              <div className="font-medium text-gray-900">{lot.lotNo}</div>
-              {lot.parentLot ? (
+              <div className="font-medium text-gray-900">{lot!.lotNo}</div>
+              {lot!.parentLot ? (
                 <div className="mt-1 text-gray-700">
-                  Parent: <Link className="text-blue-600" href={`/lots/${lot.parentLot.id}`}>{lot.parentLot.lotNo}</Link>
+                  Parent: <Link className="text-blue-600" href={`/lots/${lot!.parentLot.id}`}>{lot!.parentLot.lotNo}</Link>
                 </div>
               ) : (
                 <div className="mt-1 text-gray-500">Parent: Root lot</div>
               )}
 
-              {lot.childLots.length > 0 ? (
+              {lot!.childLots.length > 0 ? (
                 <div className="mt-3">
                   <div className="text-gray-600 mb-1">Children</div>
                   <ul className="space-y-1">
-                    {lot.childLots.map((child) => (
+                    {lot!.childLots.map((child) => (
                       <li key={child.id} className="flex items-center gap-2">
                         <span className="text-gray-400">└─</span>
                         <Link className="text-blue-600" href={`/lots/${child.id}`}>{child.lotNo}</Link>
@@ -751,7 +753,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
           <div>
             <h2 className="font-semibold text-gray-900 mb-2">Child Lots</h2>
-            {lot.childLots.length === 0 ? (
+            {lot!.childLots.length === 0 ? (
               <p className="text-gray-600 text-sm">No child lots yet.</p>
             ) : (
               <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -759,7 +761,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                   <table className="w-full min-w-[500px] text-xs sm:text-sm">
                     <thead><tr className="text-left border-b"><th className="py-2 px-2 sm:px-3">Lot</th><th className="px-2 sm:px-3">Initial</th><th className="px-2 sm:px-3">Current</th><th className="px-2 sm:px-3">Status</th></tr></thead>
                     <tbody>
-                      {lot.childLots.map((child) => (
+                      {lot!.childLots.map((child) => (
                         <tr key={child.id} className="border-b hover:bg-gray-50">
                           <td className="py-2 px-2 sm:px-3"><Link href={`/lots/${child.id}`} className="text-blue-600 break-words">{child.lotNo}</Link></td>
                           <td className="px-2 sm:px-3 whitespace-nowrap">{formatNumber(child.initialWeight)}</td>
@@ -800,9 +802,9 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
           {/* Vendor search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vendor (optional)</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Vendor (optional)</label>
             {vendorId ? (
-              <div className="flex items-center justify-between border rounded px-3 py-2 text-sm">
+              <div className="flex items-center justify-between rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100">
                 <span>{vendorName}</span>
                 <button type="button" className="text-gray-400 hover:text-red-500 text-xs" onClick={() => { setVendorId(''); setVendorName(''); }}>✕</button>
               </div>
@@ -815,13 +817,13 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                   onChange={(e) => setVSearch(e.target.value)}
                   onFocus={() => setVDropdownOpen(true)}
                   onBlur={() => setTimeout(() => setVDropdownOpen(false), 200)}
-                  className="w-full px-3 py-2 border rounded text-sm"
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
                 {vDropdownOpen && vOptions.length > 0 && (
-                  <ul className="absolute z-10 w-full bg-white border rounded shadow-sm mt-1 max-h-40 overflow-y-auto text-sm">
+                  <ul className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-200 bg-white text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     {vOptions.map((v) => (
                       <li key={v.id}
-                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                        className="cursor-pointer px-3 py-2 text-gray-900 hover:bg-blue-50 dark:text-gray-100 dark:hover:bg-slate-800"
                         onMouseDown={(e) => {
                           e.preventDefault();
                           setVendorId(String(v.id));
@@ -839,8 +841,13 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           {lot && (
-            <div className="p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-              <p className="text-gray-700">Current Weight: <span className="font-semibold text-blue-700">{formatNumber(displayCurrentWeight)} cts</span></p>
+            <div className="rounded border border-blue-200 bg-blue-50 p-2 text-sm dark:border-blue-900/60 dark:bg-slate-800/80">
+              <p className="text-gray-700 dark:text-gray-200">
+                Current Weight:{' '}
+                <span className="font-semibold text-blue-700 dark:text-blue-300">
+                  {formatNumber(displayCurrentWeight)} cts
+                </span>
+              </p>
             </div>
           )}
 
@@ -860,7 +867,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Output Weight (cts) {isCompletingOnOrBeforeToday ? '*' : '(optional)'}
+                Output Weight (cts) {isCompletingOnOrBeforeToday ? '*' : ''}
               </label>
               <input type="number" step="0.001" min="0" value={procOutputWeight}
                 onChange={(e) => setProcOutputWeight(e.target.value)}
@@ -889,7 +896,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
               ) : null}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
               <input type="date" value={procEndDate} onChange={(e) => setProcEndDate(e.target.value)}
                 min={procStartDate || undefined}
                 className="w-full px-3 py-2 border rounded text-sm" />
@@ -946,7 +953,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
         <form onSubmit={submitSplit} className="bg-white border border-gray-200 rounded-lg p-5 h-fit space-y-3">
           <h2 className="font-semibold text-gray-900">Split Lot</h2>
-          <p className="text-sm text-gray-600">Enter child weights. Residual stays on source lot.</p>
+          <p className="text-sm text-gray-600">Enter child weights. Residual stays on source lot!.</p>
 
           {splitWeights.map((value, idx) => (
             <div key={idx}>
@@ -988,7 +995,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           <div className="text-sm text-gray-700">
             Split total: <span className="font-semibold">{formatNumber(splitTotal)} cts</span>
             <br />
-            Source current: <span className="font-semibold">{formatNumber(lot.currentWeight)} cts</span>
+            Source current: <span className="font-semibold">{formatNumber(lot!.currentWeight)} cts</span>
           </div>
 
           <button
@@ -999,7 +1006,9 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             {splitSaving ? <>Saving split <AnimatedDots /></> : 'Save Split'}
           </button>
         </form>
-        </main>
+          </div>
+        )}
+      </main>
 
       {confirmDeleteProcessId !== null ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

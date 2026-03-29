@@ -151,6 +151,8 @@ model User {
   companies               Company[]
   invoices                Invoice[]
   purchaseInvoices        PurchaseInvoice[]
+  expenseTypes            ExpenseType[]
+  expenses                Expense[]
 }
 
 model PurchaseInvoice {
@@ -261,6 +263,26 @@ enum LotSourceType {
   ADJUSTMENT
 }
 
+model ExpenseType {
+  id             Int       @id @default(autoincrement())
+  name           String
+  normalizedName String
+  usageCount     Int       @default(0)
+  createdBy      Int?
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  creator        User?     @relation(fields: [createdBy], references: [id])
+  expenses       Expense[]
+
+  @@index([createdBy])
+  @@index([isDeleted])
+  @@index([name])
+  @@index([normalizedName])
+  @@unique([createdBy, normalizedName])
+}
+
 model Supplier {
   id           Int        @id @default(autoincrement())
   name         String
@@ -361,6 +383,7 @@ model Purchase {
   updatedAt    DateTime       @updatedAt
   supplier     Supplier       @relation(fields: [supplierId], references: [id])
   lots         Lot[]          @relation("PurchaseLots")
+  expenses     Expense[]
 
   @@index([purchaseNo])
   @@index([supplierId])
@@ -397,6 +420,7 @@ model Lot {
   splitAsChild       LotSplit[]          @relation("SplitChildLot")
   processes          LotProcess[]
   costs              LotCost[]
+  expenses           Expense[]
   saleItems          SaleItem[]
   inventorySnapshots InventorySnapshot[]
 
@@ -407,6 +431,39 @@ model Lot {
   @@index([isDeleted])
   @@index([inventoryState])
   @@index([currentStage])
+}
+
+model Expense {
+  id            Int         @id @default(autoincrement())
+  expenseNo     String?     @unique
+  expenseDate   DateTime
+  amount        Decimal     @db.Decimal(18, 2)
+  description   String
+  remarks       String?
+  expenseTypeId Int
+  purchaseId    Int?
+  lotId         Int?
+  fileUrl       String?
+  publicId      String?
+  fileName      String?
+  fileSize      Int?
+  createdBy     Int?
+  updatedBy     Int?
+  isDeleted     Boolean     @default(false)
+  deletedAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  expenseType   ExpenseType @relation(fields: [expenseTypeId], references: [id])
+  purchase      Purchase?   @relation(fields: [purchaseId], references: [id])
+  lot           Lot?        @relation(fields: [lotId], references: [id])
+  creator       User?       @relation(fields: [createdBy], references: [id])
+
+  @@index([expenseDate])
+  @@index([expenseTypeId])
+  @@index([purchaseId])
+  @@index([lotId])
+  @@index([createdBy])
+  @@index([isDeleted])
 }
 
 model LotSplit {
@@ -589,4 +646,38 @@ model Payment {
   @@index([direction])
   @@index([status])
   @@index([paymentDate])
+}
+
+model Employee {
+  id           Int       @id @default(autoincrement())
+  name         String
+  code         String?   @unique
+  email        String?
+  phone        String?
+  designation  String?
+  department   String?
+  joinDate     DateTime?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  stateCode    String?
+  bankName     String?
+  bankAccount  String?
+  ifsc         String?
+  panNumber    String?
+  aadharNumber String?
+  isActive     Boolean   @default(true)
+  createdBy    Int?
+  updatedBy    Int?
+  isDeleted    Boolean   @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([name])
+  @@index([code])
+  @@index([email])
+  @@index([isActive])
+  @@index([isDeleted])
 }

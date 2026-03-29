@@ -37,6 +37,11 @@ TableGroup Sales_And_Payments [color: #EF4444] {
   Payment
 }
 
+TableGroup Expense_Module [color: #0EA5E9] {
+  ExpenseType
+  Expense
+}
+
 Enum LotStatus {
   PURCHASED
   IN_PROCESS
@@ -605,6 +610,57 @@ Table Payment {
   }
 }
 
+Table ExpenseType {
+  id int [pk, increment]
+  name varchar
+  normalizedName varchar
+  usageCount int [default: 0]
+  createdBy int
+  isDeleted boolean [default: false]
+  deletedAt timestamp
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp
+
+  indexes {
+    (createdBy)
+    (isDeleted)
+    (name)
+    (normalizedName)
+    (createdBy, normalizedName) [unique]
+  }
+}
+
+Table Expense {
+  id int [pk, increment]
+  expenseNo varchar [unique]
+  expenseDate timestamp
+  amount decimal(18,2)
+  description varchar
+  remarks varchar
+  expenseTypeId int
+  purchaseId int
+  lotId int
+  fileUrl varchar
+  publicId varchar
+  fileName varchar
+  fileSize int
+  createdBy int
+  updatedBy int
+  isDeleted boolean [default: false]
+  deletedAt timestamp
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp
+
+  indexes {
+    (expenseDate)
+    (expenseTypeId)
+    (purchaseId)
+    (lotId)
+    (createdBy)
+    (isDeleted)
+  }
+}
+
 Ref: Company.createdBy > User.id
 Ref: Invoice.sellerId > Company.id
 Ref: Invoice.buyerId > Company.id
@@ -625,3 +681,8 @@ Ref: InventorySnapshot.lotId > Lot.id
 Ref: Sale.customerId > Customer.id
 Ref: SaleItem.saleId > Sale.id
 Ref: SaleItem.lotId > Lot.id
+Ref: ExpenseType.createdBy > User.id
+Ref: Expense.expenseTypeId > ExpenseType.id
+Ref: Expense.purchaseId > Purchase.id
+Ref: Expense.lotId > Lot.id
+Ref: Expense.createdBy > User.id

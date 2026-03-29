@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Loader from '@/components/Loader';
 import { apiClient } from '@/lib/api-client';
+import { DetailPageSkeleton } from '@/components/PageSkeleton';
 
 interface Supplier {
   id: number;
@@ -96,11 +96,7 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
     return { lotCount, costEntries, summedCost };
   }, [purchase]);
 
-  if (loading) {
-    return <Loader fullScreen text="Loading purchase details..." />;
-  }
-
-  if (error || !purchase) {
+  if (!loading && (error || !purchase)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center bg-white border rounded-lg p-6 max-w-md w-full">
@@ -129,36 +125,40 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
             </Link>
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">Purchase Details</h1>
           </div>
-          <div className="text-sm text-gray-600">#{purchase.purchaseNo}</div>
+          <div className="text-sm text-gray-600">#{purchase?.purchaseNo || '...'}</div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-        <section className="bg-white border border-gray-200 rounded-lg p-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-sm">
+        {loading ? (
+          <DetailPageSkeleton />
+        ) : (
+          <>
+            <section className="bg-white border border-gray-200 rounded-lg p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-sm">
             <div>
               <p className="text-gray-500">Supplier</p>
-              <p className="font-semibold text-gray-900">{purchase.supplier?.name || '-'}</p>
+              <p className="font-semibold text-gray-900">{purchase!.supplier?.name || '-'}</p>
             </div>
             <div>
               <p className="text-gray-500">Purchase Date</p>
-              <p className="font-semibold text-gray-900">{new Date(purchase.purchaseDate).toLocaleDateString('en-IN')}</p>
+              <p className="font-semibold text-gray-900">{new Date(purchase!.purchaseDate).toLocaleDateString('en-IN')}</p>
             </div>
             <div>
               <p className="text-gray-500">Rough Weight</p>
-              <p className="font-semibold text-gray-900">{formatNumber(purchase.roughWeight, 3)} cts</p>
+              <p className="font-semibold text-gray-900">{formatNumber(purchase!.roughWeight, 3)} cts</p>
             </div>
             <div>
               <p className="text-gray-500">Total Amount</p>
-              <p className="font-semibold text-gray-900">INR {formatNumber(purchase.totalAmount, 2)}</p>
+              <p className="font-semibold text-gray-900">INR {formatNumber(purchase!.totalAmount, 2)}</p>
             </div>
             <div>
               <p className="text-gray-500">Status</p>
-              <p className="font-semibold text-gray-900">{purchase.status}</p>
+              <p className="font-semibold text-gray-900">{purchase!.status}</p>
             </div>
             <div>
               <p className="text-gray-500">Reference</p>
-              <p className="font-semibold text-gray-900">{purchase.referenceNo || '-'}</p>
+              <p className="font-semibold text-gray-900">{purchase!.referenceNo || '-'}</p>
             </div>
             <div>
               <p className="text-gray-500">Linked Lots</p>
@@ -169,10 +169,10 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
               <p className="font-semibold text-gray-900">{totals.costEntries}</p>
             </div>
           </div>
-          {purchase.remarks ? (
+          {purchase!.remarks ? (
             <div className="mt-4 text-sm">
               <p className="text-gray-500 mb-1">Remarks</p>
-              <p className="text-gray-800">{purchase.remarks}</p>
+              <p className="text-gray-800">{purchase!.remarks}</p>
             </div>
           ) : null}
         </section>
@@ -183,11 +183,11 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
             <p className="text-sm text-gray-600">Total Ledger Cost: INR {formatNumber(totals.summedCost, 2)}</p>
           </div>
 
-          {purchase.lots.length === 0 ? (
-            <p className="text-gray-600">No lots linked to this purchase.</p>
+          {purchase!.lots.length === 0 ? (
+            <p className="text-gray-600">No lots linked to this purchase!.</p>
           ) : (
             <div className="space-y-4">
-              {purchase.lots.map((lot) => (
+              {purchase!.lots.map((lot) => (
                 <div key={lot.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-sm mb-3">
                     <div>
@@ -248,7 +248,9 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
               ))}
             </div>
           )}
-        </section>
+            </section>
+          </>
+        )}
       </main>
     </div>
   );
