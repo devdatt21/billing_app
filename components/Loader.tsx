@@ -29,7 +29,7 @@ export default function Loader({
         className={`animate-spin ${sizeClasses[size]} border-blue-500 border-t-transparent rounded-full`}
       />
       {text && (
-        <p className={`mt-3 text-gray-600 ${size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base'}`}>
+        <p className={`mt-3 text-gray-700 dark:text-gray-300 ${size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base'}`}>
           {text}
         </p>
       )}
@@ -38,7 +38,7 @@ export default function Loader({
 
   if (fullScreen) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
         {spinner}
       </div>
     );

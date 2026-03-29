@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -210,22 +211,36 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {!isCollapsed || isMobile ? (
                 <Link
                   href="/"
-                  className="text-lg font-bold text-gray-900 hover:text-blue-700 dark:text-gray-100 dark:hover:text-blue-300"
+                  className="inline-flex items-center"
                   onClick={() => {
                     if (isMobile) {
                       setMobileNavOpen(false);
                     }
                   }}
+                  aria-label="carbonshine home"
                 >
-                  carbonshine
+                  <Image
+                    src="/carbonshinelogo-removebg.png"
+                    alt="carbonshine"
+                    width={220}
+                    height={48}
+                    priority
+                    className="h-10 w-auto"
+                  />
                 </Link>
               ) : (
                 <Link
                   href="/"
-                  className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
+                  className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1 dark:bg-slate-800"
                   aria-label="Go to home"
                 >
-                  CS
+                  <Image
+                    src="/carbonshinediamondlogo-removebg.png"
+                    alt="carbonshine icon"
+                    width={24}
+                    height={24}
+                    className="h-5 w-5 object-contain"
+                  />
                 </Link>
               )}
               <div className="flex items-center gap-2">

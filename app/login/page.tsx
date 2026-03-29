@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -54,11 +55,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 dark:bg-slate-950">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 via-blue-50 to-cyan-100 py-12 px-4 sm:px-6 lg:px-8 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       <div className="max-w-md w-full">
         <div className="mb-6 text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-blue-700">carbonshine</p>
-          <h2 className="mt-2 text-3xl font-extrabold text-gray-900 dark:text-gray-100">Sign in to your account</h2>
+          <div className="flex justify-center">
+            <Image
+              src="/carbonshinelogo-removebg.png"
+              alt="carbonshine"
+              width={620}
+              height={148}
+              priority
+              className="h-28 w-auto sm:h-32"
+            />
+          </div>
+          <h2 className="mt-2 text-3xl font-extrabold text-gray-900 dark:text-gray-100">Sign In</h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Manage purchases, lots, and billing in one place.</p>
         </div>
 

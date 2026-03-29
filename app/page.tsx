@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useEffect } from 'react';
 import Loader from '@/components/Loader';
 
@@ -56,7 +57,14 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto px-4 py-8">
         <section className="bg-white rounded-lg shadow-md border border-gray-200 p-6 sm:p-8 mb-6">
-          <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">ERP Dashboard</p>
+          <Image
+            src="/carbonshinelogo-removebg.png"
+            alt="carbonshine"
+            width={220}
+            height={48}
+            priority
+            className="h-10 w-auto"
+          />
           <h1 className="mt-2 text-3xl sm:text-4xl font-bold text-gray-900">Welcome back, {user.name}</h1>
           <p className="mt-3 max-w-3xl text-sm sm:text-base text-gray-600">
             This is the ERP landing dashboard. Charts are dummy placeholders for now and will be connected to live purchase, lot,

@@ -10,6 +10,11 @@ export const metadata: Metadata = {
     template: '%s | carbonshine',
   },
   description: 'carbonshine ERP for purchase, lot genealogy, and billing operations',
+  icons: {
+    icon: '/carbonshinediamondlogo-removebg.png',
+    shortcut: '/carbonshinediamondlogo-removebg.png',
+    apple: '/carbonshinediamondlogo-removebg.png',
+  },
 };
 
 export const viewport: Viewport = {
