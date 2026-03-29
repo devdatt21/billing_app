@@ -63,7 +63,7 @@ export async function sendVerificationEmail(
           <h1>Email Verification</h1>
         </div>
         <div class="content">
-          <h2>Welcome to Billing App!</h2>
+          <h2>Welcome to carbonshine!</h2>
           <p>Thank you for signing up. Please use the following verification code to activate your account:</p>
           <div class="otp-box">
             <div class="otp-code">${otp}</div>
@@ -73,7 +73,7 @@ export async function sendVerificationEmail(
           <p>If you didn't create an account, please ignore this email.</p>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Billing App. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} carbonshine. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -82,9 +82,9 @@ export async function sendVerificationEmail(
 
   return sendEmail({
     to: email,
-    subject: 'Your Verification Code - Billing App',
+    subject: 'Your Verification Code - carbonshine',
     html,
-    text: `Welcome to Billing App! Your verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you didn't create an account, please ignore this email.`,
+    text: `Welcome to carbonshine! Your verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you didn't create an account, please ignore this email.`,
   });
 }
 
@@ -129,7 +129,7 @@ export async function sendPasswordResetEmail(
           </div>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Billing App. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} carbonshine. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -138,7 +138,7 @@ export async function sendPasswordResetEmail(
 
   return sendEmail({
     to: email,
-    subject: 'Reset Your Password - Billing App',
+    subject: 'Reset Your Password - carbonshine',
     html,
     text: `You requested to reset your password. Click this link to reset: ${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, please ignore this email.`,
   });
@@ -180,7 +180,7 @@ export async function sendPasswordResetConfirmation(email: string): Promise<bool
           </ul>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Billing App. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} carbonshine. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -189,7 +189,7 @@ export async function sendPasswordResetConfirmation(email: string): Promise<bool
 
   return sendEmail({
     to: email,
-    subject: 'Password Changed Successfully - Billing App',
+    subject: 'Password Changed Successfully - carbonshine',
     html,
     text: `Your password has been changed successfully.\n\nIf you did not make this change, please contact support immediately.`,
   });

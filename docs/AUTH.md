@@ -1,7 +1,7 @@
 # JWT Authentication Implementation
 
 ## Overview
-This billing application now includes JWT (JSON Web Token) authentication with bcrypt password hashing.
+The carbonshine application now includes JWT (JSON Web Token) authentication with bcrypt password hashing.
 
 ## Features
 - User registration and login

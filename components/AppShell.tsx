@@ -217,7 +217,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     }
                   }}
                 >
-                  D-Trade
+                  carbonshine
                 </Link>
               ) : (
                 <Link
@@ -225,7 +225,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
                   aria-label="Go to home"
                 >
-                  DT
+                  CS
                 </Link>
               )}
               <div className="flex items-center gap-2">

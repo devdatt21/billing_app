@@ -6,10 +6,10 @@ import AppShell from '@/components/AppShell';
 
 export const metadata: Metadata = {
   title: {
-    default: 'D-Trade',
-    template: '%s | D-Trade',
+    default: 'carbonshine',
+    template: '%s | carbonshine',
   },
-  description: 'D-Trade ERP for purchase, lot genealogy, and billing operations',
+  description: 'carbonshine ERP for purchase, lot genealogy, and billing operations',
 };
 
 export const viewport: Viewport = {

@@ -10,7 +10,7 @@
 ### Step 2: Generate App Password
 1. Go to https://myaccount.google.com/apppasswords
 2. Select **Mail** as the app
-3. Select **Other** as the device and enter "Billing App"
+3. Select **Other** as the device and enter "carbonshine"
 4. Click **Generate**
 5. Copy the 16-character password (remove spaces)
 

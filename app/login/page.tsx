@@ -57,7 +57,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 dark:bg-slate-950">
       <div className="max-w-md w-full">
         <div className="mb-6 text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-blue-700">D-Trade</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-blue-700">carbonshine</p>
           <h2 className="mt-2 text-3xl font-extrabold text-gray-900 dark:text-gray-100">Sign in to your account</h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Manage purchases, lots, and billing in one place.</p>
         </div>
