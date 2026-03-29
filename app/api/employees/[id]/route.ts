@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
 
@@ -72,10 +73,11 @@ export async function PUT(
     });
 
     return NextResponse.json(employee, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PUT /api/employees/[id] error:', error);
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: `${error.meta?.target?.[0] || 'Field'} already exists` }, { status: 400 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = Array.isArray(error.meta?.target) ? error.meta.target[0] : 'Field';
+      return NextResponse.json({ error: `${target || 'Field'} already exists` }, { status: 400 });
     }
     return NextResponse.json({ error: 'Failed to update employee' }, { status: 500 });
   }

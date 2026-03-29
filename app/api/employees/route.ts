@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
 
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Number(url.searchParams.get('limit')) || 200, 500);
     const q = url.searchParams.get('q')?.toLowerCase() || '';
 
-    const where: any = {
+    const where: Prisma.EmployeeWhereInput = {
       createdBy: user.userId,
       isDeleted: false,
     };
@@ -104,10 +105,11 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(employee, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST /api/employees error:', error);
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: `${error.meta?.target?.[0] || 'Field'} already exists` }, { status: 400 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = Array.isArray(error.meta?.target) ? error.meta.target[0] : 'Field';
+      return NextResponse.json({ error: `${target || 'Field'} already exists` }, { status: 400 });
     }
     return NextResponse.json({ error: 'Failed to create employee' }, { status: 500 });
   }

@@ -21,28 +21,16 @@ function getFinancialYearParts(date = new Date()) {
   };
 }
 
-function getNextSequence(current: string | null, pattern: RegExp): number {
-  if (!current) return 1;
-  const match = current.match(pattern);
-  if (!match) return 1;
-  const value = parseInt(match[3], 10);
-  return Number.isNaN(value) ? 1 : value + 1;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromHeaders(request);
+    const user = await getUserFromHeaders(request);
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const fy = getFinancialYearParts();
 
-
     // Find the highest purchaseNo and lotNo for the current FY, including soft-deleted
-    const purchasePattern = new RegExp(`^PUR/${fy.start}-${fy.end}/(\\d+)$`);
-    const lotPattern = new RegExp(`^LOT/${fy.start}-${fy.end}/(\\d+)$`);
-
     // Get all lotNos for this FY (including soft-deleted)
     const allLots = await prisma.lot.findMany({
       where: {
