@@ -124,19 +124,48 @@ export async function POST(
     }
 
     const residualWeight = sourceCurrentWeight.minus(totalChildWeight);
+    const sourceAccumulatedCost = new Decimal(sourceLot.accumulatedCost);
+    let remainingAllocatedCost = sourceAccumulatedCost;
+
+    const childCostAllocations = finalizedChildren.map((child, idx) => {
+      if (sourceAccumulatedCost.lte(0)) {
+        return new Decimal(0);
+      }
+
+      if (idx === finalizedChildren.length - 1) {
+        return remainingAllocatedCost;
+      }
+
+      const allocated = sourceAccumulatedCost
+        .times(child.weight)
+        .div(sourceCurrentWeight)
+        .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+      remainingAllocatedCost = remainingAllocatedCost.minus(allocated);
+      return allocated;
+    });
+
+    const totalAllocatedCost = childCostAllocations.reduce(
+      (sum, amount) => sum.plus(amount),
+      new Decimal(0)
+    );
+    const residualCost = sourceAccumulatedCost.minus(totalAllocatedCost);
+    const splitRecordedAt = new Date();
 
     const result = await prisma.$transaction(async (tx) => {
       const updatedSource = await tx.lot.update({
         where: { id: sourceLot.id },
         data: {
           currentWeight: residualWeight,
+          accumulatedCost: residualCost,
           status: residualWeight.eq(0) ? 'CLOSED' : sourceLot.status,
           updatedBy: user?.userId || null,
         },
       });
 
       const createdChildren = [];
-      for (const child of finalizedChildren) {
+      for (const [index, child] of finalizedChildren.entries()) {
+        const allocatedCost = childCostAllocations[index];
         const createdChild = await tx.lot.create({
           data: {
             lotNo: child.lotNo,
@@ -148,7 +177,7 @@ export async function POST(
             inventoryState: sourceLot.inventoryState,
             currentStage: sourceLot.currentStage,
             currentLocation: sourceLot.currentLocation,
-            accumulatedCost: 0,
+            accumulatedCost: allocatedCost,
             notes: child.notes,
             createdBy: user?.userId || null,
             updatedBy: user?.userId || null,
@@ -161,11 +190,39 @@ export async function POST(
             childLotId: createdChild.id,
             splitWeight: child.weight,
             residualAfterSplit: residualWeight,
-            splitDate: new Date(),
+            splitDate: splitRecordedAt,
             remarks: body.remarks || null,
             createdBy: user?.userId || null,
           },
         });
+
+        if (allocatedCost.gt(0)) {
+          await tx.lotCost.create({
+            data: {
+              lotId: sourceLot.id,
+              category: 'MISC',
+              sourceType: 'LOT_SPLIT',
+              sourceRefId: createdChild.id,
+              amount: allocatedCost.negated(),
+              costDate: splitRecordedAt,
+              remarks: `Cost transferred to child lot ${child.lotNo}`,
+              createdBy: user?.userId || null,
+            },
+          });
+
+          await tx.lotCost.create({
+            data: {
+              lotId: createdChild.id,
+              category: 'MISC',
+              sourceType: 'LOT_SPLIT',
+              sourceRefId: sourceLot.id,
+              amount: allocatedCost,
+              costDate: splitRecordedAt,
+              remarks: `Cost received from parent lot ${sourceLot.lotNo}`,
+              createdBy: user?.userId || null,
+            },
+          });
+        }
 
         createdChildren.push(createdChild);
       }

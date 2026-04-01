@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Loader from '@/components/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -50,8 +51,8 @@ export default function LoginPage() {
     }
   };
 
-  if (authLoading || user) {
-    return null;
+  if (authLoading || isSubmitting || user) {
+    return <Loader fullScreen text={isSubmitting ? 'Logging in...' : 'Loading...'} />;
   }
 
   return (

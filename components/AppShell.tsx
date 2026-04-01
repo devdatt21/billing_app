@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { kind: 'link', label: 'Purchase Intake', href: '/purchases' },
   { kind: 'link', label: 'Lots & Genealogy', href: '/lots' },
   { kind: 'link', label: 'Expenses', href: '/expenses' },
+  { kind: 'link', label: 'Finance', href: '/reports/monthly-finance' },
   {
     kind: 'group',
     label: 'ERP Master Data',

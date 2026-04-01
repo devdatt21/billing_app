@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ExpenseSchema } from '@/lib/validations';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
+import { syncExpenseLotLedger } from '@/lib/lot-costs';
 
 function normalizeExpenseTypeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -73,6 +74,36 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = ExpenseSchema.parse(body);
 
+    if (validated.lotId) {
+      const lot = await prisma.lot.findFirst({
+        where: {
+          id: validated.lotId,
+          createdBy: user.userId,
+          isDeleted: false,
+        },
+        select: { id: true },
+      });
+
+      if (!lot) {
+        throw new Error('Linked lot not found');
+      }
+    }
+
+    if (validated.purchaseId) {
+      const purchase = await prisma.purchase.findFirst({
+        where: {
+          id: validated.purchaseId,
+          createdBy: user.userId,
+          isDeleted: false,
+        },
+        select: { id: true },
+      });
+
+      if (!purchase) {
+        throw new Error('Linked purchase not found');
+      }
+    }
+
     const expenseTypeId = await resolveExpenseTypeId(user.userId, validated);
 
     const expense = await prisma.$transaction(async (tx) => {
@@ -93,6 +124,15 @@ export async function POST(request: NextRequest) {
           purchase: { select: { id: true, purchaseNo: true } },
           lot: { select: { id: true, lotNo: true } },
         },
+      });
+
+      await syncExpenseLotLedger(tx, {
+        expenseId: created.id,
+        userId: user.userId,
+        lotId: created.lotId,
+        amount: created.amount,
+        expenseDate: created.expenseDate,
+        description: created.description,
       });
 
       await tx.expenseType.update({

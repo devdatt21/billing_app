@@ -74,6 +74,15 @@ interface LotProcess {
   vendor?: { id: number; name: string } | null;
 }
 
+interface LotCostEntry {
+  id: number;
+  category: string;
+  sourceType?: string | null;
+  amount: string;
+  costDate: string;
+  remarks?: string | null;
+}
+
 interface ProcessTypeOption {
   id: number;
   name: string;
@@ -109,6 +118,7 @@ interface LotDetail {
   splitAsSource: SplitAsSourceEntry[];
   splitAsChild: SplitAsChildEntry[];
   processes: LotProcess[];
+  costs: LotCostEntry[];
 }
 
 function formatNumber(value: string | number, fractionDigits = 3): string {
@@ -306,6 +316,30 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           - new Date(a.processStartDate || a.processDate).getTime()
       )[0]?.id ?? null;
   }, [lot]);
+
+  const costSummary = useMemo(() => {
+    if (!lot) {
+      return {
+        totalSpent: 0,
+        positiveSpend: 0,
+        currentWeight: 0,
+        costPerCarat: 0,
+      };
+    }
+
+    const totalSpent = lot.costs.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+    const positiveSpend = lot.costs.reduce((sum, entry) => (
+      Number(entry.amount || 0) > 0 ? sum + Number(entry.amount) : sum
+    ), 0);
+    const currentWeight = Number(displayCurrentWeight || 0);
+
+    return {
+      totalSpent,
+      positiveSpend,
+      currentWeight,
+      costPerCarat: currentWeight > 0 ? totalSpent / currentWeight : 0,
+    };
+  }, [lot, displayCurrentWeight]);
 
   const maxAllowedInputWeight = useMemo(() => Number(displayCurrentWeight || 0), [displayCurrentWeight]);
 
@@ -601,6 +635,63 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                 {lot!.parentLot ? <Link className="text-blue-600" href={`/lots/${lot!.parentLot.id}`}>{lot!.parentLot.lotNo}</Link> : '-'}
               </p>
             </div>
+          </div>
+
+          <div>
+            <h2 className="font-semibold text-gray-900 mb-2">Financial Summary</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p className="text-gray-500">Total Spent On This Lot</p>
+                <p className="mt-1 font-semibold text-gray-900">INR {costSummary.totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p className="text-gray-500">Gross Cost Added</p>
+                <p className="mt-1 font-semibold text-gray-900">INR {costSummary.positiveSpend.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p className="text-gray-500">Cost Per Carat</p>
+                <p className="mt-1 font-semibold text-gray-900">INR {costSummary.costPerCarat.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900">Cost Ledger</h2>
+              <p className="text-xs text-gray-500">{lot!.costs.length} entry(s)</p>
+            </div>
+            {lot!.costs.length === 0 ? (
+              <p className="text-sm text-gray-600">No cost entries recorded yet.</p>
+            ) : (
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full px-4 sm:px-0">
+                  <table className="w-full min-w-[640px] text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b bg-gray-50 text-left">
+                        <th className="py-2 px-2 sm:px-3">Date</th>
+                        <th className="px-2 sm:px-3">Category</th>
+                        <th className="px-2 sm:px-3">Source</th>
+                        <th className="px-2 sm:px-3 text-right">Amount</th>
+                        <th className="px-2 sm:px-3">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lot!.costs.map((entry) => (
+                        <tr key={entry.id} className="border-b hover:bg-gray-50">
+                          <td className="py-2 px-2 sm:px-3 whitespace-nowrap">{formatDate(entry.costDate)}</td>
+                          <td className="px-2 sm:px-3 whitespace-nowrap">{entry.category}</td>
+                          <td className="px-2 sm:px-3 whitespace-nowrap">{entry.sourceType || '-'}</td>
+                          <td className={`px-2 sm:px-3 whitespace-nowrap text-right font-medium ${Number(entry.amount) < 0 ? 'text-amber-700' : 'text-gray-900'}`}>
+                            INR {Number(entry.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-2 sm:px-3">{entry.remarks || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
