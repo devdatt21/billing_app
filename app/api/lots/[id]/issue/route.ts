@@ -124,6 +124,7 @@ export async function POST(
         where: { id: lotId },
         data: {
           availableWeight: new Prisma.Decimal(availableWeight.sub(issuedWeight).toString()),
+          inProcessWeight: new Prisma.Decimal(toDecimal(lot.inProcessWeight.toString(), 'in process weight').add(issuedWeight).toString()),
           status: 'IN_PROCESS',
           inventoryState: 'WIP',
           currentStage: stage,

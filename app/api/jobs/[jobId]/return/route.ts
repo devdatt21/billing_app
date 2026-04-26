@@ -81,10 +81,15 @@ export async function POST(
       let nextLoss = toDecimal(job.lossWeight.toString(), 'loss weight');
       let nextStatus: 'IN_PROGRESS' | 'COMPLETED' = 'IN_PROGRESS';
 
+      let lotLostWeightToAdd = toDecimal('0', 'loss weight');
+      let lotInProcessWeightToSub = returnedWeight;
+
       if (validated.isFinalReturn) {
         const computedLoss = issuedWeight.sub(totalReturned);
         if (computedLoss.gt(0)) {
           nextLoss = computedLoss;
+          lotLostWeightToAdd = computedLoss;
+          lotInProcessWeightToSub = lotInProcessWeightToSub.add(computedLoss);
         }
         nextStatus = 'COMPLETED';
       }
@@ -106,6 +111,9 @@ export async function POST(
         where: { id: job.lotId },
         data: {
           availableWeight: new Prisma.Decimal(toDecimal(job.lot.availableWeight.toString(), 'available weight').add(returnedWeight).toString()),
+          inProcessWeight: new Prisma.Decimal(toDecimal(job.lot.inProcessWeight.toString(), 'in process weight').sub(lotInProcessWeightToSub).toString()),
+          lostWeight: new Prisma.Decimal(toDecimal(job.lot.lostWeight.toString(), 'lost weight').add(lotLostWeightToAdd).toString()),
+          totalLaborCost: new Prisma.Decimal(toDecimal(job.lot.totalLaborCost.toString(), 'total labor cost').add(laborCost).toString()),
           status: validated.isFinalReturn ? 'READY' : 'IN_PROCESS',
           inventoryState: validated.isFinalReturn ? 'READY_POLISHED' : 'WIP',
           updatedBy: user.userId,

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
+import { parseJobMeta } from '@/lib/manufacturing';
 
 export async function GET(
   request: NextRequest,
@@ -22,10 +23,10 @@ export async function GET(
     const lot = await prisma.lot.findFirst({
       where: { id, createdBy: user.userId, isDeleted: false },
       include: {
-        jobs: {
+        processes: {
+          where: { isDeleted: false },
           include: {
             vendor: { select: { id: true, name: true } },
-            returns: true,
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -42,28 +43,28 @@ export async function GET(
       return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
     }
 
-    const jobs = lot.jobs.map((job) => {
+    const jobs = lot.processes.map((process) => {
+      const meta = parseJobMeta(process.remarks);
+      
+      let mappedStatus: string = process.status;
+      if (process.status === 'IN_PROGRESS') {
+        mappedStatus = meta.returns.length > 0 ? 'PARTIAL' : 'OPEN';
+      }
+
       return {
-        id: job.id,
-        lotId: job.lotId,
-        vendorId: job.vendorId,
-        processName: job.processName,
-        billingType: job.billingType,
-        billingRate: job.billingRate.toString(),
-        issuedWeight: job.issuedWeight.toString(),
-        issuedPieces: job.issuedPieces,
-        status: job.status,
-        createdAt: job.createdAt,
-        updatedAt: job.updatedAt,
-        vendor: job.vendor,
-        returns: job.returns.map((r) => ({
-          id: r.id,
-          returnedWeight: r.returnedWeight.toString(),
-          returnedPieces: r.returnedPieces,
-          laborCost: r.laborCost.toString(),
-          isFinalReturn: r.isFinalReturn,
-          returnDate: r.returnDate.toISOString(),
-        })),
+        id: process.id,
+        lotId: process.lotId,
+        vendorId: process.vendorId,
+        processName: meta.processName,
+        billingType: meta.billingType,
+        billingRate: meta.billingRate,
+        issuedWeight: process.inputWeight.toString(),
+        issuedPieces: meta.issuedPieces,
+        status: mappedStatus,
+        createdAt: process.createdAt,
+        updatedAt: process.updatedAt,
+        vendor: process.vendor,
+        returns: meta.returns,
       };
     });
 
@@ -90,5 +91,40 @@ export async function GET(
   } catch (error) {
     console.error('GET /api/lots/[id] error:', error);
     return NextResponse.json({ error: 'Failed to fetch lot' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const id = Number(params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json({ error: 'Invalid lot ID' }, { status: 400 });
+    }
+
+    const lot = await prisma.lot.findFirst({
+      where: { id, createdBy: user.userId, isDeleted: false },
+    });
+
+    if (!lot) {
+      return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
+    }
+
+    await prisma.lot.update({
+      where: { id },
+      data: { isDeleted: true, updatedBy: user.userId },
+    });
+
+    return NextResponse.json({ message: 'Lot deleted successfully' });
+  } catch (error) {
+    console.error('DELETE /api/lots/[id] error:', error);
+    return NextResponse.json({ error: 'Failed to delete lot' }, { status: 500 });
   }
 }
