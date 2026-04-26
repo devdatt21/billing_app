@@ -131,6 +131,16 @@ export async function POST(
           updatedBy: user.userId,
         },
       });
+
+      await tx.materialMovement.create({
+        data: {
+          lotId,
+          movementType: 'ISSUE',
+          fromBucket: 'SAFE',
+          toBucket: 'VENDOR_WIP',
+          weight: new Prisma.Decimal(issuedWeight.toString()),
+        },
+      });
     });
 
     return NextResponse.json({ message: 'job issued successfully' });

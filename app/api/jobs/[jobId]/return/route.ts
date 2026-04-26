@@ -120,6 +120,28 @@ export async function POST(
         },
       });
 
+      await tx.materialMovement.create({
+        data: {
+          lotId: job.lotId,
+          movementType: 'RETURN',
+          fromBucket: 'VENDOR_WIP',
+          toBucket: 'SAFE',
+          weight: new Prisma.Decimal(returnedWeight.toString()),
+        },
+      });
+
+      if (validated.isFinalReturn && lotLostWeightToAdd.gt(0)) {
+        await tx.materialMovement.create({
+          data: {
+            lotId: job.lotId,
+            movementType: 'LOSS',
+            fromBucket: 'VENDOR_WIP',
+            toBucket: 'LOST',
+            weight: new Prisma.Decimal(lotLostWeightToAdd.toString()),
+          },
+        });
+      }
+
       if (laborCost.gt(0)) {
         await tx.lotCost.create({
           data: {
@@ -131,6 +153,14 @@ export async function POST(
             costDate: returnDate,
             remarks: `${meta.processName || 'Process'} labor`,
             createdBy: user.userId,
+          },
+        });
+
+        await tx.costMovement.create({
+          data: {
+            lotId: job.lotId,
+            costType: 'LABOR_COST',
+            amount: new Prisma.Decimal(laborCost.toString()),
           },
         });
       }

@@ -293,7 +293,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
           <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">Lot not found.</div>
         ) : (
           <>
-            <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+            <section className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
               <Metric label="Initial" value={`${Number(lot.initialWeight).toFixed(3)} ct`} />
               <Metric label="Available" value={`${Number(lot.availableWeight).toFixed(3)} ct`} />
               <Metric label="In Process" value={`${Number(lot.inProcessWeight).toFixed(3)} ct`} />
@@ -448,30 +448,30 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             ) : null}
 
             <section className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <div className="flex border-b border-gray-200 bg-gray-50 justify-between items-center pr-4">
-                <div className="flex">
+              <div className="flex flex-col sm:flex-row border-b border-gray-200 bg-gray-50 justify-between items-start sm:items-center">
+                <div className="flex w-full sm:w-auto overflow-x-auto">
                   <button
                     type="button"
                     onClick={() => setActiveTab('jobs')}
-                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'jobs' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                    className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'jobs' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                   >
                     Process Jobs
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab('ledger')}
-                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'ledger' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                    className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'ledger' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                   >
                     Ledger History
                   </button>
                 </div>
                 {activeTab === 'jobs' && (
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">Filter:</label>
+                  <div className="flex items-center gap-2 p-3 sm:p-0 sm:pr-4 w-full sm:w-auto border-t sm:border-t-0 border-gray-200 bg-white sm:bg-transparent">
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</label>
                     <select
                       value={processFilter}
                       onChange={(e) => setProcessFilter(e.target.value)}
-                      className="border rounded px-2 py-1 text-sm bg-white text-gray-700"
+                      className="border rounded px-2 py-1 text-sm bg-white text-gray-700 w-full sm:w-auto"
                     >
                       <option value="">All Processes</option>
                       {availableProcesses.map((p) => (
@@ -486,7 +486,8 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                 filteredJobs.length === 0 ? (
                   <p className="p-4 text-sm text-gray-600">No jobs yet for this criteria.</p>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <>
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full min-w-[1050px]">
                       <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
@@ -538,6 +539,62 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                       </tbody>
                     </table>
                   </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:hidden p-4 bg-gray-50/50">
+                    {filteredJobs.map((job) => (
+                      <div key={job.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="font-semibold text-gray-800 text-base">{job.processName}</div>
+                          <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                            {job.status}
+                          </span>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600">
+                          <span className="block">Vendor: <span className="font-medium text-gray-800">{job.vendor?.name || (job.vendorId ? `#${job.vendorId}` : '-')}</span></span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-sm border-t border-gray-100 pt-2">
+                          <div>
+                            <span className="text-gray-500 block text-xs">Issued</span>
+                            <span className="font-medium text-gray-800">{Number(job.issuedWeight).toFixed(3)} ct / {job.issuedPieces} pcs</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500 block text-xs">Billing</span>
+                            <span className="font-medium text-gray-800">{job.billingType} @ {job.billingRate}</span>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-2">
+                          <span className="text-gray-500 block text-xs mb-1">Returns</span>
+                          {job.returns.length === 0 ? (
+                            <span className="text-sm text-gray-500">No returns</span>
+                          ) : (
+                            <div className="space-y-1">
+                              {job.returns.map((entry) => (
+                                <div key={entry.id} className="rounded bg-gray-50 px-2 py-1 text-xs text-gray-700">
+                                  {Number(entry.returnedWeight).toFixed(3)} ct / {entry.returnedPieces} pcs - {entry.isFinalReturn ? 'Final' : 'Partial'}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {(job.status === 'OPEN' || job.status === 'PARTIAL') ? (
+                          <div className="pt-2 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setActiveJobId(job.id)}
+                              className="rounded border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 w-full text-center"
+                            >
+                              Receive Return
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                  </>
                 )
               ) : (
                 <div className="p-0">
@@ -678,9 +735,9 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-lg border border-gray-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-2 text-xl font-bold text-gray-900">{value}</p>
+    <article className="rounded-lg border border-gray-200 bg-white p-3 sm:p-4 flex flex-col justify-center">
+      <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
+      <p className="mt-1 sm:mt-2 text-base sm:text-xl font-bold text-gray-900 truncate">{value}</p>
     </article>
   );
 }
