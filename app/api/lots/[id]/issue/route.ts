@@ -60,8 +60,8 @@ export async function POST(
         throw new Error('Vendor not found');
       }
 
-      const currentWeight = toDecimal(lot.currentWeight.toString(), 'current weight');
-      if (issuedWeight.gt(currentWeight)) {
+      const availableWeight = toDecimal(lot.availableWeight.toString(), 'available weight');
+      if (issuedWeight.gt(availableWeight)) {
         throw new Error('Insufficient available weight in lot');
       }
 
@@ -123,7 +123,7 @@ export async function POST(
       await tx.lot.update({
         where: { id: lotId },
         data: {
-          currentWeight: new Prisma.Decimal(currentWeight.sub(issuedWeight).toString()),
+          availableWeight: new Prisma.Decimal(availableWeight.sub(issuedWeight).toString()),
           status: 'IN_PROCESS',
           inventoryState: 'WIP',
           currentStage: stage,

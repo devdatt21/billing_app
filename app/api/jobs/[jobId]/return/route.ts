@@ -105,7 +105,7 @@ export async function POST(
       await tx.lot.update({
         where: { id: job.lotId },
         data: {
-          currentWeight: new Prisma.Decimal(toDecimal(job.lot.currentWeight.toString(), 'current weight').add(returnedWeight).toString()),
+          availableWeight: new Prisma.Decimal(toDecimal(job.lot.availableWeight.toString(), 'available weight').add(returnedWeight).toString()),
           status: validated.isFinalReturn ? 'READY' : 'IN_PROCESS',
           inventoryState: validated.isFinalReturn ? 'READY_POLISHED' : 'WIP',
           updatedBy: user.userId,

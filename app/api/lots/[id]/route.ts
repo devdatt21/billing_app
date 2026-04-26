@@ -3,17 +3,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
-import { parseJobMeta } from '@/lib/manufacturing';
-
-function resolveJobStatus(isCompleted: boolean, returnsCount: number): 'OPEN' | 'PARTIAL' | 'COMPLETED' {
-  if (isCompleted) {
-    return 'COMPLETED';
-  }
-  if (returnsCount > 0) {
-    return 'PARTIAL';
-  }
-  return 'OPEN';
-}
 
 export async function GET(
   request: NextRequest,
@@ -33,11 +22,17 @@ export async function GET(
     const lot = await prisma.lot.findFirst({
       where: { id, createdBy: user.userId, isDeleted: false },
       include: {
-        processes: {
-          where: { isDeleted: false },
+        jobs: {
           include: {
             vendor: { select: { id: true, name: true } },
+            returns: true,
           },
+          orderBy: { createdAt: 'desc' },
+        },
+        materialMovements: {
+          orderBy: { createdAt: 'desc' },
+        },
+        costMovements: {
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -47,34 +42,30 @@ export async function GET(
       return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
     }
 
-    const jobs = lot.processes.map((process) => {
-      const meta = parseJobMeta(process.remarks);
+    const jobs = lot.jobs.map((job) => {
       return {
-        id: process.id,
-        lotId: process.lotId,
-        vendorId: process.vendorId,
-        processName: meta.processName || process.processTypeId.toString(),
-        billingType: meta.billingType,
-        billingRate: meta.billingRate,
-        issuedWeight: process.inputWeight.toString(),
-        issuedPieces: meta.issuedPieces,
-        status: resolveJobStatus(process.status === 'COMPLETED', meta.returns.length),
-        createdAt: process.createdAt,
-        updatedAt: process.updatedAt,
-        vendor: process.vendor,
-        returns: meta.returns,
+        id: job.id,
+        lotId: job.lotId,
+        vendorId: job.vendorId,
+        processName: job.processName,
+        billingType: job.billingType,
+        billingRate: job.billingRate.toString(),
+        issuedWeight: job.issuedWeight.toString(),
+        issuedPieces: job.issuedPieces,
+        status: job.status,
+        createdAt: job.createdAt,
+        updatedAt: job.updatedAt,
+        vendor: job.vendor,
+        returns: job.returns.map((r) => ({
+          id: r.id,
+          returnedWeight: r.returnedWeight.toString(),
+          returnedPieces: r.returnedPieces,
+          laborCost: r.laborCost.toString(),
+          isFinalReturn: r.isFinalReturn,
+          returnDate: r.returnDate.toISOString(),
+        })),
       };
     });
-
-    const inProcessWeight = lot.processes.reduce((acc, process) => {
-      const issued = Number(process.inputWeight);
-      const returned = Number(process.outputWeight) + Number(process.lossWeight);
-      return acc + Math.max(issued - returned, 0);
-    }, 0);
-
-    const totalLaborCost = lot.processes.reduce((acc, process) => {
-      return acc + Number(process.costAmount);
-    }, 0);
 
     const payload = {
       id: lot.id,
@@ -82,15 +73,17 @@ export async function GET(
       name: lot.notes || lot.lotNo,
       purchaseId: lot.sourcePurchaseId,
       initialWeight: lot.initialWeight.toString(),
-      availableWeight: lot.currentWeight.toString(),
-      inProcessWeight: inProcessWeight.toFixed(3),
+      availableWeight: lot.availableWeight.toString(),
+      inProcessWeight: lot.inProcessWeight.toString(),
       finishedWeight: '0.000',
-      lostWeight: lot.processes.reduce((acc, process) => acc + Number(process.lossWeight), 0).toFixed(3),
-      purchaseCost: lot.accumulatedCost.toString(),
-      totalLaborCost: totalLaborCost.toFixed(2),
+      lostWeight: lot.lostWeight.toString(),
+      purchaseCost: lot.purchaseCost.toString(),
+      totalLaborCost: lot.totalLaborCost.toString(),
       createdAt: lot.createdAt,
       updatedAt: lot.updatedAt,
       jobs,
+      materialMovements: lot.materialMovements.map((m) => ({ ...m, weight: m.weight.toString() })),
+      costMovements: lot.costMovements.map((c) => ({ ...c, amount: c.amount.toString() })),
     };
 
     return NextResponse.json({ data: payload });

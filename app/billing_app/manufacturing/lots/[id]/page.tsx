@@ -34,6 +34,23 @@ interface Job {
   } | null;
 }
 
+interface MaterialMovement {
+  id: number;
+  movementType: string;
+  fromBucket: string;
+  toBucket: string;
+  weight: string;
+  pieces: number;
+  createdAt: string;
+}
+
+interface CostMovement {
+  id: number;
+  costType: string;
+  amount: string;
+  createdAt: string;
+}
+
 interface LotDetail {
   id: number;
   lotNumber: string;
@@ -46,6 +63,8 @@ interface LotDetail {
   purchaseCost: string;
   totalLaborCost: string;
   jobs: Job[];
+  materialMovements?: MaterialMovement[];
+  costMovements?: CostMovement[];
 }
 
 interface VendorOption {
@@ -63,12 +82,16 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [lot, setLot] = useState<LotDetail | null>(null);
   const [vendors, setVendors] = useState<VendorOption[]>([]);
+  const [activeTab, setActiveTab] = useState<'jobs' | 'ledger'>('jobs');
 
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
 
   const [vendorId, setVendorId] = useState('');
+  const [availableProcesses, setAvailableProcesses] = useState<string[]>(['Laser', 'Sarin 4P', 'Polishing']);
   const [processName, setProcessName] = useState('');
+  const [newProcessName, setNewProcessName] = useState('');
+  const [processFilter, setProcessFilter] = useState('');
   const [billingType, setBillingType] = useState<'PER_CARAT' | 'PER_PIECE' | 'FIXED'>('PER_CARAT');
   const [billingRate, setBillingRate] = useState('');
   const [issuedWeight, setIssuedWeight] = useState('');
@@ -122,6 +145,19 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
     if (!user || !Number.isFinite(lotId) || lotId <= 0) return;
     void Promise.all([loadLot(), loadVendors()]);
   }, [user, lotId, loadLot, loadVendors]);
+
+  useEffect(() => {
+    if (lot?.jobs) {
+      const usedProcesses = lot.jobs.map((j) => j.processName).filter(Boolean);
+      setAvailableProcesses((prev) => Array.from(new Set([...prev, ...usedProcesses])));
+    }
+  }, [lot?.jobs]);
+
+  const filteredJobs = useMemo(() => {
+    if (!lot) return [];
+    if (!processFilter) return lot.jobs;
+    return lot.jobs.filter((j) => j.processName === processFilter);
+  }, [lot, processFilter]);
 
   const onCreateVendor = async () => {
     const name = newVendorName.trim();
@@ -268,7 +304,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             {showIssueForm ? (
               <form onSubmit={onIssueJob} className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
                 <h2 className="text-base font-semibold text-gray-900">Issue Job</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
                     <select
@@ -305,14 +341,46 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Process Name</label>
-                    <input
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Process</label>
+                    <select
                       value={processName}
                       onChange={(e) => setProcessName(e.target.value)}
                       className="w-full border rounded px-3 py-2"
-                      placeholder="Laser / Sarin / Polishing"
                       required
-                    />
+                    >
+                      <option value="">Select process</option>
+                      {availableProcesses.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">New Process (optional add)</label>
+                    <div className="flex gap-2">
+                      <input
+                        value={newProcessName}
+                        onChange={(e) => setNewProcessName(e.target.value)}
+                        className="w-full border rounded px-3 py-2"
+                        placeholder="Process name"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const trimmed = newProcessName.trim();
+                          if (!trimmed) {
+                            toast.warning('Enter process name first');
+                            return;
+                          }
+                          setAvailableProcesses((prev) => Array.from(new Set([...prev, trimmed])));
+                          setProcessName(trimmed);
+                          setNewProcessName('');
+                        }}
+                        className="rounded border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -380,64 +448,160 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
             ) : null}
 
             <section className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200">
-                <h2 className="text-base font-semibold text-gray-900">Process Jobs</h2>
+              <div className="flex border-b border-gray-200 bg-gray-50 justify-between items-center pr-4">
+                <div className="flex">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('jobs')}
+                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'jobs' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                  >
+                    Process Jobs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('ledger')}
+                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'ledger' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                  >
+                    Ledger History
+                  </button>
+                </div>
+                {activeTab === 'jobs' && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Filter:</label>
+                    <select
+                      value={processFilter}
+                      onChange={(e) => setProcessFilter(e.target.value)}
+                      className="border rounded px-2 py-1 text-sm bg-white text-gray-700"
+                    >
+                      <option value="">All Processes</option>
+                      {availableProcesses.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
-              {lot.jobs.length === 0 ? (
-                <p className="p-4 text-sm text-gray-600">No jobs yet.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1050px]">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Process</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Vendor</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Issued</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Billing</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Returns</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {lot.jobs.map((job) => (
-                        <tr key={job.id} className="border-b border-gray-100 align-top">
-                          <td className="px-4 py-3 text-sm text-gray-800">{job.processName}</td>
-                          <td className="px-4 py-3 text-sm text-gray-800">{job.vendor?.name || (job.vendorId ? `#${job.vendorId}` : '-')}</td>
-                          <td className="px-4 py-3 text-sm text-gray-800">{Number(job.issuedWeight).toFixed(3)} ct / {job.issuedPieces} pcs</td>
-                          <td className="px-4 py-3 text-sm text-gray-800">{job.billingType} @ {job.billingRate}</td>
-                          <td className="px-4 py-3 text-sm text-gray-800">{job.status}</td>
-                          <td className="px-4 py-3 text-sm text-gray-800">
-                            {job.returns.length === 0 ? (
-                              <span className="text-gray-500">No returns</span>
-                            ) : (
-                              <div className="space-y-1">
-                                {job.returns.map((entry) => (
-                                  <div key={entry.id} className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
-                                    {Number(entry.returnedWeight).toFixed(3)} ct / {entry.returnedPieces} pcs - {entry.isFinalReturn ? 'Final' : 'Partial'}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {(job.status === 'OPEN' || job.status === 'PARTIAL') ? (
-                              <button
-                                type="button"
-                                onClick={() => setActiveJobId(job.id)}
-                                className="rounded border border-blue-300 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-50"
-                              >
-                                Receive Return
-                              </button>
-                            ) : (
-                              <span className="text-gray-500">Completed</span>
-                            )}
-                          </td>
+              {activeTab === 'jobs' ? (
+                filteredJobs.length === 0 ? (
+                  <p className="p-4 text-sm text-gray-600">No jobs yet for this criteria.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[1050px]">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Process</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Vendor</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Issued</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Billing</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Returns</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {filteredJobs.map((job) => (
+                          <tr key={job.id} className="border-b border-gray-100 align-top">
+                            <td className="px-4 py-3 text-sm text-gray-800">{job.processName}</td>
+                            <td className="px-4 py-3 text-sm text-gray-800">{job.vendor?.name || (job.vendorId ? `#${job.vendorId}` : '-')}</td>
+                            <td className="px-4 py-3 text-sm text-gray-800">{Number(job.issuedWeight).toFixed(3)} ct / {job.issuedPieces} pcs</td>
+                            <td className="px-4 py-3 text-sm text-gray-800">{job.billingType} @ {job.billingRate}</td>
+                            <td className="px-4 py-3 text-sm text-gray-800">{job.status}</td>
+                            <td className="px-4 py-3 text-sm text-gray-800">
+                              {job.returns.length === 0 ? (
+                                <span className="text-gray-500">No returns</span>
+                              ) : (
+                                <div className="space-y-1">
+                                  {job.returns.map((entry) => (
+                                    <div key={entry.id} className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                                      {Number(entry.returnedWeight).toFixed(3)} ct / {entry.returnedPieces} pcs - {entry.isFinalReturn ? 'Final' : 'Partial'}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {(job.status === 'OPEN' || job.status === 'PARTIAL') ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveJobId(job.id)}
+                                  className="rounded border border-blue-300 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                                >
+                                  Receive Return
+                                </button>
+                              ) : (
+                                <span className="text-gray-500">Completed</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : (
+                <div className="p-0">
+                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <h3 className="text-sm font-semibold text-gray-800">Material Ledger (Weight)</h3>
+                  </div>
+                  {(!lot.materialMovements || lot.materialMovements.length === 0) ? (
+                    <p className="p-4 text-sm text-gray-600">No material movements recorded.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-white border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Type</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">From Bucket</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">To Bucket</th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600">Weight (ct)</th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600">Pieces</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lot.materialMovements.map((m) => (
+                            <tr key={m.id} className="border-b border-gray-100 text-sm hover:bg-gray-50">
+                              <td className="px-4 py-2 text-gray-800 whitespace-nowrap">{new Date(m.createdAt).toLocaleString()}</td>
+                              <td className="px-4 py-2 text-gray-800">{m.movementType}</td>
+                              <td className="px-4 py-2 text-gray-800">{m.fromBucket}</td>
+                              <td className="px-4 py-2 text-gray-800">{m.toBucket}</td>
+                              <td className="px-4 py-2 text-right font-medium text-gray-900">{Number(m.weight).toFixed(3)}</td>
+                              <td className="px-4 py-2 text-right text-gray-800">{m.pieces || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <div className="px-4 py-3 border-b border-t border-gray-200 bg-gray-50">
+                    <h3 className="text-sm font-semibold text-gray-800">Cost Ledger (Financial)</h3>
+                  </div>
+                  {(!lot.costMovements || lot.costMovements.length === 0) ? (
+                    <p className="p-4 text-sm text-gray-600">No cost movements recorded.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-white border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Cost Type</th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lot.costMovements.map((c) => (
+                            <tr key={c.id} className="border-b border-gray-100 text-sm hover:bg-gray-50">
+                              <td className="px-4 py-2 text-gray-800 whitespace-nowrap">{new Date(c.createdAt).toLocaleString()}</td>
+                              <td className="px-4 py-2 text-gray-800">{c.costType}</td>
+                              <td className="px-4 py-2 text-right font-medium text-gray-900">₹{Number(c.amount).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </section>

@@ -328,6 +328,7 @@ model Vendor {
 
   creator      User?        @relation("UserVendors", fields: [createdBy], references: [id])
   lotProcesses LotProcess[]
+  processJobs  ProcessJob[]
 
   @@index([name])
   @@index([isActive])
@@ -398,15 +399,19 @@ model Lot {
   sourceType       LotSourceType  @default(PURCHASE)
   sourcePurchaseId Int?
   parentLotId      Int?
+  notes            String?
+
   initialWeight    Decimal        @db.Decimal(18, 3)
-  currentWeight    Decimal        @db.Decimal(18, 3)
+  availableWeight  Decimal        @db.Decimal(18, 3)
+  inProcessWeight  Decimal        @default(0) @db.Decimal(18, 3)
+  lostWeight       Decimal        @default(0) @db.Decimal(18, 3)
+  purchaseCost     Decimal        @default(0) @db.Decimal(18, 2)
+  totalLaborCost   Decimal        @default(0) @db.Decimal(18, 2)
   status           LotStatus      @default(PURCHASED)
   inventoryState   InventoryState @default(ROUGH)
   currentStage     ProcessStage   @default(CUTTING)
   currentLocation  String?
-  accumulatedCost  Decimal        @default(0) @db.Decimal(18, 2)
   isSaleReady      Boolean        @default(false)
-  notes            String?
   createdBy        Int?
   updatedBy        Int?
   isDeleted        Boolean        @default(false)
@@ -425,6 +430,9 @@ model Lot {
   snapshots      InventorySnapshot[]
   saleItems      SaleItem[]
   expenses       Expense[]
+  jobs           ProcessJob[]
+  materialMovements MaterialMovement[]
+  costMovements  CostMovement[]
 
   @@index([lotNo])
   @@index([parentLotId])
@@ -720,4 +728,77 @@ model Expense {
   @@index([lotId])
   @@index([createdBy])
   @@index([isDeleted])
+}
+
+// Add to prisma/schema.prisma
+
+model ProcessJob {
+  id           Int      @id @default(autoincrement())
+  lotId        Int
+  vendorId     Int
+  processName  String
+  billingType  String
+  billingRate  Decimal  @db.Decimal(18, 2)
+  issuedWeight Decimal  @db.Decimal(18, 3)
+  issuedPieces Int      @default(0)
+  status       String   @default("OPEN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lot               Lot                @relation(fields: [lotId], references: [id])
+  vendor            Vendor             @relation(fields: [vendorId], references: [id])
+  returns           JobReturn[]
+  materialMovements MaterialMovement[]
+  costMovements     CostMovement[]
+
+  @@index([lotId])
+  @@index([vendorId])
+}
+
+model JobReturn {
+  id             Int      @id @default(autoincrement())
+  processJobId   Int
+  returnedWeight Decimal  @db.Decimal(18, 3)
+  returnedPieces Int      @default(0)
+  laborCost      Decimal  @db.Decimal(18, 2)
+  isFinalReturn  Boolean  @default(false)
+  returnDate     DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  processJob        ProcessJob         @relation(fields: [processJobId], references: [id])
+  materialMovements MaterialMovement[]
+  costMovements     CostMovement[]
+
+  @@index([processJobId])
+}
+
+model MaterialMovement {
+  id             Int       @id @default(autoincrement())
+  lotId          Int
+  processJobId   Int?
+  jobReturnId    Int?
+  movementType   String    // "PURCHASE", "ISSUE", "RETURN", "LOSS"
+  fromBucket     String    // "SUPPLIER", "SAFE", "VENDOR_WIP"
+  toBucket       String    // "SAFE", "VENDOR_WIP", "LOST"
+  weight         Decimal   @db.Decimal(18, 3)
+  pieces         Int       @default(0)
+  createdAt      DateTime  @default(now())
+  
+  lot            Lot         @relation(fields: [lotId], references: [id])
+  processJob     ProcessJob? @relation(fields: [processJobId], references: [id])
+  jobReturn      JobReturn?  @relation(fields: [jobReturnId], references: [id])
+}
+
+model CostMovement {
+  id             Int       @id @default(autoincrement())
+  lotId          Int
+  processJobId   Int?
+  jobReturnId    Int?
+  costType       String    // "PURCHASE_COST", "LABOR_COST"
+  amount         Decimal   @db.Decimal(18, 2)
+  createdAt      DateTime  @default(now())
+  
+  lot            Lot         @relation(fields: [lotId], references: [id])
+  processJob     ProcessJob? @relation(fields: [processJobId], references: [id])
+  jobReturn      JobReturn?  @relation(fields: [jobReturnId], references: [id])
 }

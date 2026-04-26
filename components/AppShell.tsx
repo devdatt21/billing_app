@@ -34,7 +34,13 @@ const navItems: NavItem[] = [
       { label: 'Create Invoice', href: '/billing_app/invoices/create', exact: true },
       { label: 'Companies', href: '/billing_app/companies' },
       { label: 'Purchase Invoices', href: '/billing_app/purchase-invoices' },
-      { label: 'Manufacturing Lots', href: '/billing_app/manufacturing/lots' },
+    ],
+  },
+  {
+    kind: 'group',
+    label: 'Manufacturing Module',
+    children: [
+      { label: 'Lots', href: '/billing_app/manufacturing/lots' },
     ],
   },
   { kind: 'link', label: 'Clean Slate', href: '/billing_app/clean-slate' },
@@ -92,6 +98,14 @@ function getNavIcon(label: string, className = 'h-4 w-4') {
     );
   }
 
+  if (normalized.includes('manufacturing')) {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+      </svg>
+    );
+  }
+
   if (normalized.includes('master')) {
     return (
       <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,8 +135,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [showMasterData, setShowMasterData] = useState(true);
   const [showBilling, setShowBilling] = useState(true);
+  const [showManufacturing, setShowManufacturing] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [themeReady, setThemeReady] = useState(false);
 
@@ -301,8 +315,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 );
               }
 
-              const isMasterGroup = item.label === 'ERP Master Data';
-              const expanded = isMasterGroup ? showMasterData : showBilling;
+              const isBillingGroup = item.label === 'Billing Module';
+              const isManufacturingGroup = item.label === 'Manufacturing Module';
+              const expanded = isBillingGroup ? showBilling : isManufacturingGroup ? showManufacturing : true;
 
               return (
                 <div key={item.label}>
@@ -311,18 +326,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     onClick={() => {
                       if (!isMobile && isCollapsed) {
                         setIsCollapsed(false);
-                        if (isMasterGroup) {
-                          setShowMasterData(true);
-                        } else {
+                        if (isBillingGroup) {
                           setShowBilling(true);
+                        } else if (isManufacturingGroup) {
+                          setShowManufacturing(true);
                         }
                         return;
                       }
 
-                      if (isMasterGroup) {
-                        setShowMasterData((prev) => !prev);
-                      } else {
+                      if (isBillingGroup) {
                         setShowBilling((prev) => !prev);
+                      } else if (isManufacturingGroup) {
+                        setShowManufacturing((prev) => !prev);
                       }
                     }}
                     className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-slate-800"

@@ -38,7 +38,7 @@ export async function syncExpenseLotLedger(
     await tx.lot.update({
       where: { id: entry.lotId },
       data: {
-        accumulatedCost: {
+        totalLaborCost: {
           decrement: entry.amount,
         },
       },
@@ -65,7 +65,7 @@ export async function syncExpenseLotLedger(
   await tx.lot.update({
     where: { id: input.lotId },
     data: {
-      accumulatedCost: {
+      totalLaborCost: {
         increment: amount,
       },
     },

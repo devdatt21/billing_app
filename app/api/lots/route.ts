@@ -27,30 +27,18 @@ export async function GET(request: NextRequest) {
     });
 
     const data = lots.map((lot) => {
-      const inProcessWeight = lot.processes.reduce((acc, process) => {
-        const issued = Number(process.inputWeight);
-        const returned = Number(process.outputWeight) + Number(process.lossWeight);
-        return acc + Math.max(issued - returned, 0);
-      }, 0);
-
-      const totalLaborCost = lot.processes.reduce((acc, process) => {
-        return acc + Number(process.costAmount);
-      }, 0);
-
       return {
         id: lot.id,
         lotNumber: lot.lotNo,
         name: lot.notes || lot.lotNo,
         purchaseId: lot.sourcePurchaseId,
         initialWeight: lot.initialWeight.toString(),
-        availableWeight: lot.currentWeight.toString(),
-        inProcessWeight: inProcessWeight.toFixed(3),
+        availableWeight: lot.availableWeight.toString(),
+        inProcessWeight: lot.inProcessWeight.toString(),
         finishedWeight: '0',
-        lostWeight: lot.processes
-          .reduce((acc, process) => acc + Number(process.lossWeight), 0)
-          .toFixed(3),
-        purchaseCost: lot.accumulatedCost.toString(),
-        totalLaborCost: totalLaborCost.toFixed(2),
+        lostWeight: lot.lostWeight.toString(),
+        purchaseCost: lot.purchaseCost.toString(),
+        totalLaborCost: lot.totalLaborCost.toString(),
         createdAt: lot.createdAt,
         updatedAt: lot.updatedAt,
       };
@@ -91,11 +79,11 @@ export async function POST(request: NextRequest) {
           sourceType: validated.purchaseId ? 'PURCHASE' : 'ADJUSTMENT',
           sourcePurchaseId: validated.purchaseId ?? null,
           initialWeight: new Prisma.Decimal(initialWeight.toString()),
-          currentWeight: new Prisma.Decimal(initialWeight.toString()),
+          availableWeight: new Prisma.Decimal(initialWeight.toString()),
           status: 'PURCHASED',
           inventoryState: 'ROUGH',
           currentStage: 'CUTTING',
-          accumulatedCost: new Prisma.Decimal(purchaseCost.toString()),
+          purchaseCost: new Prisma.Decimal(purchaseCost.toString()),
           notes: validated.name,
           createdBy: user.userId,
           updatedBy: user.userId,
@@ -114,6 +102,26 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      await tx.materialMovement.create({
+        data: {
+          lotId: created.id,
+          movementType: 'PURCHASE',
+          fromBucket: 'SUPPLIER',
+          toBucket: 'SAFE',
+          weight: new Prisma.Decimal(initialWeight.toString()),
+        },
+      });
+
+      if (purchaseCost.gt(0)) {
+        await tx.costMovement.create({
+          data: {
+            lotId: created.id,
+            costType: 'PURCHASE_COST',
+            amount: new Prisma.Decimal(purchaseCost.toString()),
+          },
+        });
+      }
+
       return created;
     });
 
@@ -125,11 +133,11 @@ export async function POST(request: NextRequest) {
           name: lot.notes || lot.lotNo,
           purchaseId: lot.sourcePurchaseId,
           initialWeight: lot.initialWeight.toString(),
-          availableWeight: lot.currentWeight.toString(),
+          availableWeight: lot.availableWeight.toString(),
           inProcessWeight: '0.000',
           finishedWeight: '0.000',
           lostWeight: '0.000',
-          purchaseCost: lot.accumulatedCost.toString(),
+          purchaseCost: lot.purchaseCost.toString(),
           totalLaborCost: '0.00',
           createdAt: lot.createdAt,
           updatedAt: lot.updatedAt,
