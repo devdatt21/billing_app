@@ -26,21 +26,6 @@ type NavItem =
     };
 
 const navItems: NavItem[] = [
-  { kind: 'link', label: 'Purchase Intake', href: '/purchases' },
-  { kind: 'link', label: 'Lots & Genealogy', href: '/lots' },
-  { kind: 'link', label: 'Expenses', href: '/expenses' },
-  { kind: 'link', label: 'Finance', href: '/reports/monthly-finance' },
-  {
-    kind: 'group',
-    label: 'ERP Master Data',
-    children: [
-      { label: 'Suppliers', href: '/masters/suppliers' },
-      { label: 'Vendors', href: '/masters/vendors' },
-      { label: 'Customers', href: '/masters/customers' },
-      { label: 'Employees', href: '/masters/employees' },
-      { label: 'Process Flow', href: '/masters/process-types' },
-    ],
-  },
   {
     kind: 'group',
     label: 'Billing Module',
@@ -49,6 +34,7 @@ const navItems: NavItem[] = [
       { label: 'Create Invoice', href: '/billing_app/invoices/create', exact: true },
       { label: 'Companies', href: '/billing_app/companies' },
       { label: 'Purchase Invoices', href: '/billing_app/purchase-invoices' },
+      { label: 'Manufacturing Lots', href: '/billing_app/manufacturing/lots' },
     ],
   },
   { kind: 'link', label: 'Clean Slate', href: '/billing_app/clean-slate' },

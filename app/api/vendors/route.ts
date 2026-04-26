@@ -2,86 +2,76 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { VendorSchema } from '@/lib/validations';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const user = getUserFromHeaders(request);
-    const validated = VendorSchema.parse(body);
-
-    const vendor = await prisma.vendor.create({
-      data: {
-        ...validated,
-        createdBy: user?.userId || null,
-        updatedBy: user?.userId || null,
-      },
-    });
-
-    return NextResponse.json(vendor, { status: 201 });
-  } catch (error: unknown) {
-    const err = error as { code?: string; meta?: { target?: string[] } };
-    if (err.code === 'P2002') {
-      const target = err.meta?.target?.[0] || 'field';
-      return NextResponse.json({ error: `${target} must be unique` }, { status: 409 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to create vendor' }, { status: 500 });
-  }
-}
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const q = searchParams.get('q')?.trim();
-    const onlyActive = searchParams.get('onlyActive') === 'true';
-    const skip = (page - 1) * limit;
-
     const user = getUserFromHeaders(request);
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const whereClause = {
-      isDeleted: false,
-      createdBy: user.userId,  // Row-level security: user only sees their own vendors
-      ...(onlyActive ? { isActive: true } : {}),
-      ...(q
-        ? {
-            OR: [
-              { name: { contains: q, mode: 'insensitive' as const } },
-              { code: { contains: q, mode: 'insensitive' as const } },
-              { specialization: { contains: q, mode: 'insensitive' as const } },
-            ],
-          }
-        : {}),
-    };
+    const { searchParams } = new URL(request.url);
+    const onlyActive = searchParams.get('onlyActive') === 'true';
 
-    const [vendors, total] = await Promise.all([
-      prisma.vendor.findMany({
-        where: whereClause,
-        skip,
-        take: limit,
-        orderBy: { name: 'asc' },
-      }),
-      prisma.vendor.count({ where: whereClause }),
-    ]);
+    const vendors = await prisma.vendor.findMany({
+      where: {
+        createdBy: user.userId,
+        isDeleted: false,
+        ...(onlyActive ? { isActive: true } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        vendorType: true,
+        specialization: true,
+        isActive: true,
+      },
+      orderBy: { name: 'asc' },
+    });
 
-    return NextResponse.json({
-      vendors,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+    return NextResponse.json({ vendors });
+  } catch (error) {
+    console.error('GET /api/vendors error:', error);
+    return NextResponse.json({ error: 'Failed to fetch vendors' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = getUserFromHeaders(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const name = String(body?.name ?? '').trim();
+
+    if (!name) {
+      return NextResponse.json({ error: 'Vendor name is required' }, { status: 400 });
+    }
+
+    const vendor = await prisma.vendor.create({
+      data: {
+        name,
+        vendorType: typeof body?.vendorType === 'string' ? body.vendorType.trim() : null,
+        specialization: typeof body?.specialization === 'string' ? body.specialization.trim() : null,
+        isActive: body?.isActive !== false,
+        createdBy: user.userId,
+        updatedBy: user.userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        vendorType: true,
+        specialization: true,
+        isActive: true,
       },
     });
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch vendors' }, { status: 500 });
+
+    return NextResponse.json(vendor, { status: 201 });
+  } catch (error) {
+    console.error('POST /api/vendors error:', error);
+    return NextResponse.json({ error: 'Failed to create vendor' }, { status: 500 });
   }
 }

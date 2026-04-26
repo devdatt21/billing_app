@@ -7,6 +7,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum LotStatus {
+  PURCHASED
+  IN_PROCESS
+  AT_VENDOR
+  READY
+  SOLD
+  CLOSED
+  HOLD
+}
+
+enum InventoryState {
+  ROUGH
+  WIP
+  READY_POLISHED
+  SOLD
+  LOSS
+  RETURNED
+}
+
+enum ProcessStage {
+  CUTTING
+  SARIN_MEASUREMENT
+  POLISHING
+  READY_INVENTORY
+  SOLD
+}
+
+enum ProcessStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PurchaseStatus {
+  DRAFT
+  RECEIVED
+  POSTED
+  CANCELLED
+}
+
+enum SaleStatus {
+  DRAFT
+  CONFIRMED
+  PARTIAL_PAID
+  PAID
+  CANCELLED
+}
+
+enum PaymentDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum PaymentStatus {
+  PENDING
+  CLEARED
+  FAILED
+  CANCELLED
+}
+
+enum PartyType {
+  SUPPLIER
+  VENDOR
+  CUSTOMER
+}
+
+enum CostCategory {
+  PURCHASE
+  CUTTING
+  SARIN
+  POLISHING
+  CERTIFICATION
+  MISC
+}
+
+enum LotSourceType {
+  PURCHASE
+  SPLIT
+  ADJUSTMENT
+}
+
 model Company {
   id               Int       @id @default(autoincrement())
   name             String
@@ -151,16 +233,28 @@ model User {
   companies               Company[]
   invoices                Invoice[]
   purchaseInvoices        PurchaseInvoice[]
-  expenseTypes            ExpenseType[]
-  expenses                Expense[]
+  suppliers               Supplier[]        @relation("UserSuppliers")
+  vendors                 Vendor[]          @relation("UserVendors")
+  customers               Customer[]        @relation("UserCustomers")
+  purchases               Purchase[]        @relation("UserPurchases")
+  lots                    Lot[]             @relation("UserLots")
+  lotSplits               LotSplit[]        @relation("UserLotSplits")
+  processTypes            ProcessType[]     @relation("UserProcessTypes")
+  lotProcesses            LotProcess[]      @relation("UserLotProcesses")
+  lotCosts                LotCost[]         @relation("UserLotCosts")
+  sales                   Sale[]            @relation("UserSales")
+  payments                Payment[]         @relation("UserPayments")
+  employees               Employee[]        @relation("UserEmployees")
+  expenseTypes            ExpenseType[]     @relation("UserExpenseTypes")
+  expenses                Expense[]         @relation("UserExpenses")
 }
 
 model PurchaseInvoice {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   invoiceNumber String
   vendorName    String
   invoiceDate   DateTime
-  amount        Decimal  @db.Decimal(18, 2)
+  amount        Decimal   @db.Decimal(18, 2)
   description   String?
   category      String? // e.g., 'Office Supplies', 'Equipment', 'Services'
   fileUrl       String // Cloudinary URL
@@ -168,11 +262,11 @@ model PurchaseInvoice {
   fileSize      Int // File size in bytes
   fileName      String
   uploadedBy    Int
-  isDeleted     Boolean  @default(false)
+  isDeleted     Boolean   @default(false)
   deletedAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  uploader      User     @relation(fields: [uploadedBy], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  uploader      User      @relation(fields: [uploadedBy], references: [id])
 
   @@index([uploadedBy])
   @@index([invoiceDate])
@@ -181,113 +275,11 @@ model PurchaseInvoice {
   @@index([isDeleted])
 }
 
-enum LotStatus {
-  PURCHASED
-  IN_PROCESS
-  AT_VENDOR
-  READY
-  SOLD
-  CLOSED
-  HOLD
-}
-
-enum InventoryState {
-  ROUGH
-  WIP
-  READY_POLISHED
-  SOLD
-  LOSS
-  RETURNED
-}
-
-enum ProcessStage {
-  CUTTING
-  SARIN_MEASUREMENT
-  POLISHING
-  READY_INVENTORY
-  SOLD
-}
-
-enum ProcessStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
-enum PurchaseStatus {
-  DRAFT
-  RECEIVED
-  POSTED
-  CANCELLED
-}
-
-enum SaleStatus {
-  DRAFT
-  CONFIRMED
-  PARTIAL_PAID
-  PAID
-  CANCELLED
-}
-
-enum PaymentDirection {
-  INCOMING
-  OUTGOING
-}
-
-enum PaymentStatus {
-  PENDING
-  CLEARED
-  FAILED
-  CANCELLED
-}
-
-enum PartyType {
-  SUPPLIER
-  VENDOR
-  CUSTOMER
-}
-
-enum CostCategory {
-  PURCHASE
-  CUTTING
-  SARIN
-  POLISHING
-  CERTIFICATION
-  MISC
-}
-
-enum LotSourceType {
-  PURCHASE
-  SPLIT
-  ADJUSTMENT
-}
-
-model ExpenseType {
-  id             Int       @id @default(autoincrement())
-  name           String
-  normalizedName String
-  usageCount     Int       @default(0)
-  createdBy      Int?
-  isDeleted      Boolean   @default(false)
-  deletedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  creator        User?     @relation(fields: [createdBy], references: [id])
-  expenses       Expense[]
-
-  @@index([createdBy])
-  @@index([isDeleted])
-  @@index([name])
-  @@index([normalizedName])
-  @@unique([createdBy, normalizedName])
-}
-
 model Supplier {
-  id           Int        @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   name         String
-  code         String?    @unique
-  gstin        String?    @unique
+  code         String?   @unique
+  gstin        String?   @unique
   phone        String?
   email        String?
   addressLine1 String?
@@ -295,15 +287,17 @@ model Supplier {
   city         String?
   state        String?
   stateCode    String?
-  openingDue   Decimal    @default(0) @db.Decimal(18, 2)
-  isActive     Boolean    @default(true)
+  openingDue   Decimal   @default(0) @db.Decimal(18, 2)
+  isActive     Boolean   @default(true)
   createdBy    Int?
   updatedBy    Int?
-  isDeleted    Boolean    @default(false)
+  isDeleted    Boolean   @default(false)
   deletedAt    DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  purchases    Purchase[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  creator   User?      @relation("UserSuppliers", fields: [createdBy], references: [id])
+  purchases Purchase[]
 
   @@index([name])
   @@index([isActive])
@@ -311,9 +305,9 @@ model Supplier {
 }
 
 model Vendor {
-  id             Int          @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   name           String
-  code           String?      @unique
+  code           String?   @unique
   vendorType     String?
   specialization String?
   phone          String?
@@ -324,14 +318,16 @@ model Vendor {
   state          String?
   stateCode      String?
   paymentTerms   String?
-  isActive       Boolean      @default(true)
+  isActive       Boolean   @default(true)
   createdBy      Int?
   updatedBy      Int?
-  isDeleted      Boolean      @default(false)
+  isDeleted      Boolean   @default(false)
   deletedAt      DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  lotProcesses   LotProcess[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  creator      User?        @relation("UserVendors", fields: [createdBy], references: [id])
+  lotProcesses LotProcess[]
 
   @@index([name])
   @@index([isActive])
@@ -339,10 +335,10 @@ model Vendor {
 }
 
 model Customer {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   name         String
-  code         String?  @unique
-  gstin        String?  @unique
+  code         String?   @unique
+  gstin        String?   @unique
   phone        String?
   email        String?
   addressLine1 String?
@@ -350,15 +346,17 @@ model Customer {
   city         String?
   state        String?
   stateCode    String?
-  openingDue   Decimal  @default(0) @db.Decimal(18, 2)
-  isActive     Boolean  @default(true)
+  openingDue   Decimal   @default(0) @db.Decimal(18, 2)
+  isActive     Boolean   @default(true)
   createdBy    Int?
   updatedBy    Int?
-  isDeleted    Boolean  @default(false)
+  isDeleted    Boolean   @default(false)
   deletedAt    DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  sales        Sale[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  creator User?  @relation("UserCustomers", fields: [createdBy], references: [id])
+  sales   Sale[]
 
   @@index([name])
   @@index([isActive])
@@ -375,15 +373,17 @@ model Purchase {
   totalAmount  Decimal        @db.Decimal(18, 2)
   status       PurchaseStatus @default(DRAFT)
   remarks      String?
-  isDeleted    Boolean        @default(false)
-  deletedAt    DateTime?
   createdBy    Int?
   updatedBy    Int?
+  isDeleted    Boolean        @default(false)
+  deletedAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  supplier     Supplier       @relation(fields: [supplierId], references: [id])
-  lots         Lot[]          @relation("PurchaseLots")
-  expenses     Expense[]
+
+  supplier   Supplier  @relation(fields: [supplierId], references: [id])
+  creator    User?     @relation("UserPurchases", fields: [createdBy], references: [id])
+  sourceLots Lot[]     @relation("LotSourcePurchase")
+  expenses   Expense[]
 
   @@index([purchaseNo])
   @@index([supplierId])
@@ -393,93 +393,64 @@ model Purchase {
 }
 
 model Lot {
-  id                 Int                 @id @default(autoincrement())
-  lotNo              String              @unique
-  sourceType         LotSourceType       @default(PURCHASE)
-  sourcePurchaseId   Int?
-  parentLotId        Int?
-  initialWeight      Decimal             @db.Decimal(18, 3)
-  currentWeight      Decimal             @db.Decimal(18, 3)
-  status             LotStatus           @default(PURCHASED)
-  inventoryState     InventoryState      @default(ROUGH)
-  currentStage       ProcessStage        @default(CUTTING)
-  currentLocation    String?
-  accumulatedCost    Decimal             @default(0) @db.Decimal(18, 2)
-  isSaleReady        Boolean             @default(false)
-  isDeleted          Boolean             @default(false)
-  deletedAt          DateTime?
-  notes              String?
-  createdBy          Int?
-  updatedBy          Int?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  sourcePurchase     Purchase?           @relation("PurchaseLots", fields: [sourcePurchaseId], references: [id])
-  parentLot          Lot?                @relation("LotParent", fields: [parentLotId], references: [id])
-  childLots          Lot[]               @relation("LotParent")
-  splitAsSource      LotSplit[]          @relation("SplitSourceLot")
-  splitAsChild       LotSplit[]          @relation("SplitChildLot")
-  processes          LotProcess[]
-  costs              LotCost[]
-  expenses           Expense[]
-  saleItems          SaleItem[]
-  inventorySnapshots InventorySnapshot[]
+  id               Int            @id @default(autoincrement())
+  lotNo            String         @unique
+  sourceType       LotSourceType  @default(PURCHASE)
+  sourcePurchaseId Int?
+  parentLotId      Int?
+  initialWeight    Decimal        @db.Decimal(18, 3)
+  currentWeight    Decimal        @db.Decimal(18, 3)
+  status           LotStatus      @default(PURCHASED)
+  inventoryState   InventoryState @default(ROUGH)
+  currentStage     ProcessStage   @default(CUTTING)
+  currentLocation  String?
+  accumulatedCost  Decimal        @default(0) @db.Decimal(18, 2)
+  isSaleReady      Boolean        @default(false)
+  notes            String?
+  createdBy        Int?
+  updatedBy        Int?
+  isDeleted        Boolean        @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  sourcePurchase Purchase?           @relation("LotSourcePurchase", fields: [sourcePurchaseId], references: [id])
+  parentLot      Lot?                @relation("LotParent", fields: [parentLotId], references: [id])
+  childLots      Lot[]               @relation("LotParent")
+  creator        User?               @relation("UserLots", fields: [createdBy], references: [id])
+  sourceSplits   LotSplit[]          @relation("LotSplitSource")
+  childSplits    LotSplit[]          @relation("LotSplitChild")
+  processes      LotProcess[]
+  costs          LotCost[]
+  snapshots      InventorySnapshot[]
+  saleItems      SaleItem[]
+  expenses       Expense[]
 
   @@index([lotNo])
   @@index([parentLotId])
   @@index([sourcePurchaseId])
   @@index([status])
-  @@index([isDeleted])
   @@index([inventoryState])
   @@index([currentStage])
-}
-
-model Expense {
-  id            Int         @id @default(autoincrement())
-  expenseNo     String?     @unique
-  expenseDate   DateTime
-  amount        Decimal     @db.Decimal(18, 2)
-  description   String
-  remarks       String?
-  expenseTypeId Int
-  purchaseId    Int?
-  lotId         Int?
-  fileUrl       String?
-  publicId      String?
-  fileName      String?
-  fileSize      Int?
-  createdBy     Int?
-  updatedBy     Int?
-  isDeleted     Boolean     @default(false)
-  deletedAt     DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  expenseType   ExpenseType @relation(fields: [expenseTypeId], references: [id])
-  purchase      Purchase?   @relation(fields: [purchaseId], references: [id])
-  lot           Lot?        @relation(fields: [lotId], references: [id])
-  creator       User?       @relation(fields: [createdBy], references: [id])
-
-  @@index([expenseDate])
-  @@index([expenseTypeId])
-  @@index([purchaseId])
-  @@index([lotId])
-  @@index([createdBy])
   @@index([isDeleted])
 }
 
 model LotSplit {
-  id                 Int      @id @default(autoincrement())
+  id                 Int       @id @default(autoincrement())
   sourceLotId        Int
   childLotId         Int
-  splitWeight        Decimal  @db.Decimal(18, 3)
-  residualAfterSplit Decimal? @db.Decimal(18, 3)
-  splitDate          DateTime @default(now())
+  splitWeight        Decimal   @db.Decimal(18, 3)
+  residualAfterSplit Decimal?  @db.Decimal(18, 3)
+  splitDate          DateTime  @default(now())
   remarks            String?
-  isDeleted          Boolean  @default(false)
-  deletedAt          DateTime?
   createdBy          Int?
-  createdAt          DateTime @default(now())
-  sourceLot          Lot      @relation("SplitSourceLot", fields: [sourceLotId], references: [id])
-  childLot           Lot      @relation("SplitChildLot", fields: [childLotId], references: [id])
+  isDeleted          Boolean   @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+
+  sourceLot Lot   @relation("LotSplitSource", fields: [sourceLotId], references: [id])
+  childLot  Lot   @relation("LotSplitChild", fields: [childLotId], references: [id])
+  creator   User? @relation("UserLotSplits", fields: [createdBy], references: [id])
 
   @@index([sourceLotId])
   @@index([childLotId])
@@ -488,27 +459,29 @@ model LotSplit {
 }
 
 model ProcessType {
-  id           Int          @id @default(autoincrement())
-  name         String
-  stage        ProcessStage
-  sequence     Int
-  isActive     Boolean      @default(true)
-  isDeleted    Boolean      @default(false)
-  deletedAt    DateTime?
-  description  String?
-  color        String       @default("#10b981")
-  createdBy    Int?
-  updatedBy    Int?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id          Int          @id @default(autoincrement())
+  name        String
+  stage       ProcessStage
+  sequence    Int
+  isActive    Boolean      @default(true)
+  description String?
+  color       String       @default("#10b981")
+  createdBy   Int?
+  updatedBy   Int?
+  isDeleted   Boolean      @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  creator      User?        @relation("UserProcessTypes", fields: [createdBy], references: [id])
   lotProcesses LotProcess[]
 
+  @@unique([createdBy, name])
   @@index([stage])
   @@index([sequence])
   @@index([isActive])
   @@index([isDeleted])
   @@index([createdBy])
-  @@unique([createdBy, name])
 }
 
 model LotProcess {
@@ -528,15 +501,17 @@ model LotProcess {
   returnedAt       DateTime?
   costAmount       Decimal       @default(0) @db.Decimal(18, 2)
   remarks          String?
-  isDeleted        Boolean       @default(false)
-  deletedAt        DateTime?
   createdBy        Int?
   updatedBy        Int?
+  isDeleted        Boolean       @default(false)
+  deletedAt        DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
-  lot              Lot           @relation(fields: [lotId], references: [id])
-  processType      ProcessType   @relation(fields: [processTypeId], references: [id])
-  vendor           Vendor?       @relation(fields: [vendorId], references: [id])
+
+  lot         Lot         @relation(fields: [lotId], references: [id])
+  processType ProcessType @relation(fields: [processTypeId], references: [id])
+  vendor      Vendor?     @relation(fields: [vendorId], references: [id])
+  creator     User?       @relation("UserLotProcesses", fields: [createdBy], references: [id])
 
   @@index([lotId])
   @@index([processTypeId])
@@ -555,11 +530,13 @@ model LotCost {
   amount      Decimal      @db.Decimal(18, 2)
   costDate    DateTime
   remarks     String?
+  createdBy   Int?
   isDeleted   Boolean      @default(false)
   deletedAt   DateTime?
-  createdBy   Int?
   createdAt   DateTime     @default(now())
-  lot         Lot          @relation(fields: [lotId], references: [id])
+
+  lot     Lot   @relation(fields: [lotId], references: [id])
+  creator User? @relation("UserLotCosts", fields: [createdBy], references: [id])
 
   @@index([lotId])
   @@index([category])
@@ -579,7 +556,8 @@ model InventorySnapshot {
   accumulatedCost  Decimal        @db.Decimal(18, 2)
   availableForSale Boolean        @default(false)
   createdAt        DateTime       @default(now())
-  lot              Lot            @relation(fields: [lotId], references: [id])
+
+  lot Lot @relation(fields: [lotId], references: [id])
 
   @@unique([snapshotDate, lotId])
   @@index([snapshotDate])
@@ -600,8 +578,10 @@ model Sale {
   updatedBy   Int?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  customer    Customer   @relation(fields: [customerId], references: [id])
-  items       SaleItem[]
+
+  customer Customer   @relation(fields: [customerId], references: [id])
+  items    SaleItem[]
+  creator  User?      @relation("UserSales", fields: [createdBy], references: [id])
 
   @@index([saleNo])
   @@index([customerId])
@@ -617,8 +597,9 @@ model SaleItem {
   ratePerCarat Decimal  @db.Decimal(18, 2)
   lineAmount   Decimal  @db.Decimal(18, 2)
   createdAt    DateTime @default(now())
-  sale         Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  lot          Lot      @relation(fields: [lotId], references: [id])
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  lot  Lot  @relation(fields: [lotId], references: [id])
 
   @@index([saleId])
   @@index([lotId])
@@ -641,6 +622,8 @@ model Payment {
   updatedBy             Int?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
+
+  creator User? @relation("UserPayments", fields: [createdBy], references: [id])
 
   @@index([partyType, partyRefId])
   @@index([direction])
@@ -675,9 +658,66 @@ model Employee {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  creator User? @relation("UserEmployees", fields: [createdBy], references: [id])
+
   @@index([name])
   @@index([code])
   @@index([email])
   @@index([isActive])
+  @@index([isDeleted])
+}
+
+model ExpenseType {
+  id             Int       @id @default(autoincrement())
+  name           String
+  normalizedName String
+  usageCount     Int       @default(0)
+  createdBy      Int?
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  creator  User?     @relation("UserExpenseTypes", fields: [createdBy], references: [id])
+  expenses Expense[]
+
+  @@unique([createdBy, normalizedName])
+  @@index([createdBy])
+  @@index([isDeleted])
+  @@index([name])
+  @@index([normalizedName])
+}
+
+model Expense {
+  id            Int       @id @default(autoincrement())
+  expenseNo     String?   @unique
+  expenseDate   DateTime
+  amount        Decimal   @db.Decimal(18, 2)
+  description   String
+  remarks       String?
+  expenseTypeId Int
+  purchaseId    Int?
+  lotId         Int?
+  fileUrl       String?
+  publicId      String?
+  fileName      String?
+  fileSize      Int?
+  createdBy     Int?
+  updatedBy     Int?
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  expenseType ExpenseType @relation(fields: [expenseTypeId], references: [id])
+  purchase    Purchase?   @relation(fields: [purchaseId], references: [id])
+  lot         Lot?        @relation(fields: [lotId], references: [id])
+  creator     User?       @relation("UserExpenses", fields: [createdBy], references: [id])
+
+  @@index([expenseDate])
+  @@index([expenseTypeId])
+  @@index([purchaseId])
+  @@index([lotId])
+  @@index([createdBy])
   @@index([isDeleted])
 }

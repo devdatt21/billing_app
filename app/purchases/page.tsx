@@ -22,16 +22,10 @@ interface PurchaseRow {
     id: number;
     name: string;
   };
-  lots: Array<{
-    id: number;
-    lotNo: string;
-    initialWeight: string;
-  }>;
 }
 
 interface PurchaseFormState {
   purchaseNo: string;
-  lotNo: string;
   supplier: SupplierOption | null;
   purchaseDate: string;
   referenceNo: string;
@@ -69,7 +63,6 @@ export default function PurchasesPage() {
   });
   const [form, setForm] = useState<PurchaseFormState>({
     purchaseNo: '',
-    lotNo: '',
     supplier: null,
     purchaseDate: todayISO(),
     referenceNo: '',
@@ -91,7 +84,6 @@ export default function PurchasesPage() {
     setForm((prev) => ({
       ...prev,
       purchaseNo: data.purchaseNo || prev.purchaseNo,
-      lotNo: data.lotNo || prev.lotNo,
     }));
   }, []);
 
@@ -165,7 +157,6 @@ export default function PurchasesPage() {
   const canSubmit = useMemo(() => {
     return (
       !!form.purchaseNo &&
-      !!form.lotNo &&
       !!form.supplier &&
       !!form.purchaseDate &&
       Number(form.roughWeight) > 0 &&
@@ -194,7 +185,6 @@ export default function PurchasesPage() {
     try {
       const payload = {
         purchaseNo: form.purchaseNo,
-        lotNo: form.lotNo,
         supplierId: form.supplier.id,
         purchaseDate: form.purchaseDate,
         referenceNo: form.referenceNo || null,
@@ -212,7 +202,7 @@ export default function PurchasesPage() {
       }
 
       await Promise.all([resetForNextEntry(), loadPurchases(filters, true)]);
-      toast.success('Purchase created with linked lot and initial cost entry.');
+      toast.success('Purchase created successfully.');
     } finally {
       setSaving(false);
     }
@@ -235,7 +225,7 @@ export default function PurchasesPage() {
             <h1 className="text-lg font-bold text-gray-900 sm:text-xl">Purchase Intake</h1>
           </div>
           <p className="hidden max-w-3xl truncate text-sm text-gray-600 md:block">
-            Record new purchases and track lot intake through receiving and posting stages.
+            Record purchase ledger entries and keep the root purchase editable before process tracking begins.
           </p>
         </div>
       </header>
@@ -254,15 +244,6 @@ export default function PurchasesPage() {
               <input
                 value={form.purchaseNo}
                 onChange={(e) => setForm((prev) => ({ ...prev, purchaseNo: e.target.value }))}
-                className="w-full px-3 py-2 border rounded"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Initial Lot No</label>
-              <input
-                value={form.lotNo}
-                onChange={(e) => setForm((prev) => ({ ...prev, lotNo: e.target.value }))}
                 className="w-full px-3 py-2 border rounded"
                 required
               />

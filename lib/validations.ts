@@ -115,7 +115,6 @@ export const ProcessTypeSchema = z.object({
 
 export const CreatePurchaseSchema = z.object({
   purchaseNo: z.string().min(1, 'Purchase number is required'),
-  lotNo: z.string().optional(),
   supplierId: z.number().int().positive('Supplier is required'),
   purchaseDate: z.string().or(z.date()).transform((val) => {
     if (typeof val === 'string') return new Date(val);
@@ -124,6 +123,20 @@ export const CreatePurchaseSchema = z.object({
   referenceNo: z.string().optional().nullable(),
   roughWeight: z.union([z.string(), z.number()]).transform((v) => String(v)),
   totalAmount: z.union([z.string(), z.number()]).transform((v) => String(v)),
+  remarks: z.string().optional().nullable(),
+  status: z.enum(['DRAFT', 'RECEIVED', 'POSTED', 'CANCELLED']).optional(),
+});
+
+export const UpdatePurchaseSchema = z.object({
+  purchaseNo: z.string().min(1, 'Purchase number is required').optional(),
+  supplierId: z.number().int().positive('Supplier is required').optional(),
+  purchaseDate: z.string().or(z.date()).transform((val) => {
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }).optional(),
+  referenceNo: z.string().optional().nullable(),
+  roughWeight: z.union([z.string(), z.number()]).transform((v) => String(v)).optional(),
+  totalAmount: z.union([z.string(), z.number()]).transform((v) => String(v)).optional(),
   remarks: z.string().optional().nullable(),
   status: z.enum(['DRAFT', 'RECEIVED', 'POSTED', 'CANCELLED']).optional(),
 });
@@ -146,6 +159,29 @@ export const ExpenseSchema = z.object({
   lotId: z.number().int().positive().optional().nullable(),
 });
 
+export const CreateManufacturingLotSchema = z.object({
+  lotNumber: z.string().trim().optional().default(''),
+  name: z.string().trim().min(1, 'Lot name is required'),
+  purchaseId: z.number().int().positive().optional().nullable(),
+  initialWeight: z.union([z.string(), z.number()]).transform((v) => String(v)),
+  purchaseCost: z.union([z.string(), z.number()]).transform((v) => String(v)),
+});
+
+export const IssueManufacturingJobSchema = z.object({
+  vendorId: z.number().int().positive('Vendor is required'),
+  processName: z.string().trim().min(1, 'Process name is required'),
+  billingType: z.enum(['PER_CARAT', 'PER_PIECE', 'FIXED']),
+  billingRate: z.union([z.string(), z.number()]).transform((v) => String(v)),
+  issuedWeight: z.union([z.string(), z.number()]).transform((v) => String(v)),
+  issuedPieces: z.number().int().min(0).optional().default(0),
+});
+
+export const ReceiveManufacturingReturnSchema = z.object({
+  returnedWeight: z.union([z.string(), z.number()]).transform((v) => String(v)),
+  returnedPieces: z.number().int().min(0).optional().default(0),
+  isFinalReturn: z.boolean().optional().default(false),
+});
+
 export type CreateInvoiceInput = z.infer<typeof CreateInvoiceSchema>;
 export type CompanyInput = z.infer<typeof CompanySchema>;
 export type SupplierInput = z.infer<typeof SupplierSchema>;
@@ -153,5 +189,9 @@ export type VendorInput = z.infer<typeof VendorSchema>;
 export type CustomerInput = z.infer<typeof CustomerSchema>;
 export type ProcessTypeInput = z.infer<typeof ProcessTypeSchema>;
 export type CreatePurchaseInput = z.infer<typeof CreatePurchaseSchema>;
+export type UpdatePurchaseInput = z.infer<typeof UpdatePurchaseSchema>;
 export type ExpenseTypeInput = z.infer<typeof ExpenseTypeSchema>;
 export type ExpenseInput = z.infer<typeof ExpenseSchema>;
+export type CreateManufacturingLotInput = z.infer<typeof CreateManufacturingLotSchema>;
+export type IssueManufacturingJobInput = z.infer<typeof IssueManufacturingJobSchema>;
+export type ReceiveManufacturingReturnInput = z.infer<typeof ReceiveManufacturingReturnSchema>;

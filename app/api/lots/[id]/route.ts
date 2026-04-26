@@ -3,125 +3,19 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
+import { parseJobMeta } from '@/lib/manufacturing';
 
-function parseId(id: string): number | null {
-  const parsed = parseInt(id, 10);
-  return Number.isNaN(parsed) ? null : parsed;
+function resolveJobStatus(isCompleted: boolean, returnsCount: number): 'OPEN' | 'PARTIAL' | 'COMPLETED' {
+  if (isCompleted) {
+    return 'COMPLETED';
+  }
+  if (returnsCount > 0) {
+    return 'PARTIAL';
+  }
+  return 'OPEN';
 }
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const id = parseId(params.id);
-  if (!id) return NextResponse.json({ error: 'Invalid lot ID' }, { status: 400 });
-
-  const user = getUserFromHeaders(request);
-  if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-
-  const lot = await prisma.lot.findFirst({
-    where: { id, createdBy: user.userId, isDeleted: false },  // Row-level security
-    include: {
-      sourcePurchase: {
-        select: {
-          id: true,
-          purchaseNo: true,
-          purchaseDate: true,
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-      parentLot: {
-        select: {
-          id: true,
-          lotNo: true,
-          currentWeight: true,
-          status: true,
-        },
-      },
-      childLots: {
-        where: { isDeleted: false },
-        select: {
-          id: true,
-          lotNo: true,
-          initialWeight: true,
-          currentWeight: true,
-          status: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'asc' },
-      },
-      splitAsSource: {
-        where: {
-          isDeleted: false,
-          childLot: {
-            isDeleted: false,
-          },
-        },
-        include: {
-          childLot: {
-            select: {
-              id: true,
-              lotNo: true,
-              currentWeight: true,
-              status: true,
-            },
-          },
-        },
-        orderBy: { splitDate: 'desc' },
-      },
-      splitAsChild: {
-        where: {
-          isDeleted: false,
-          sourceLot: {
-            isDeleted: false,
-          },
-        },
-        include: {
-          sourceLot: {
-            select: {
-              id: true,
-              lotNo: true,
-              currentWeight: true,
-              status: true,
-            },
-          },
-        },
-        orderBy: { splitDate: 'desc' },
-      },
-      costs: {
-        where: {
-          isDeleted: false,
-        },
-        orderBy: { createdAt: 'desc' },
-      },
-      processes: {
-        where: {
-          status: { not: 'CANCELLED' },
-          isDeleted: false,
-        },
-        include: {
-          processType: {
-            select: { id: true, name: true, stage: true, color: true },
-          },
-          vendor: {
-            select: { id: true, name: true },
-          },
-        },
-        orderBy: { processDate: 'desc' },
-      },
-    },
-  });
-
-  if (!lot) return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
-  return NextResponse.json(lot);
-}
-
-export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -131,51 +25,77 @@ export async function DELETE(
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const id = parseId(params.id);
-    if (!id) return NextResponse.json({ error: 'Invalid lot ID' }, { status: 400 });
+    const id = Number(params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json({ error: 'Invalid lot ID' }, { status: 400 });
+    }
 
     const lot = await prisma.lot.findFirst({
       where: { id, createdBy: user.userId, isDeleted: false },
-      select: {
-        id: true,
-        lotNo: true,
-        status: true,
-        notes: true,
+      include: {
+        processes: {
+          where: { isDeleted: false },
+          include: {
+            vendor: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 
-    if (!lot) return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
-
-    const activeChildLots = await prisma.lot.count({
-      where: {
-        parentLotId: lot.id,
-        isDeleted: false,
-      },
-    });
-
-    if (activeChildLots > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete this parent lot because child lots exist. Delete child lots first.' },
-        { status: 422 }
-      );
+    if (!lot) {
+      return NextResponse.json({ error: 'Lot not found' }, { status: 404 });
     }
 
-    const deletedStamp = `Deleted on ${new Date().toISOString()} by user ${user.userId}`;
-    const nextNotes = lot.notes ? `${lot.notes}\n${deletedStamp}` : deletedStamp;
-
-    await prisma.lot.update({
-      where: { id },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        status: 'CLOSED',
-        notes: nextNotes,
-        updatedBy: user.userId || null,
-      },
+    const jobs = lot.processes.map((process) => {
+      const meta = parseJobMeta(process.remarks);
+      return {
+        id: process.id,
+        lotId: process.lotId,
+        vendorId: process.vendorId,
+        processName: meta.processName || process.processTypeId.toString(),
+        billingType: meta.billingType,
+        billingRate: meta.billingRate,
+        issuedWeight: process.inputWeight.toString(),
+        issuedPieces: meta.issuedPieces,
+        status: resolveJobStatus(process.status === 'COMPLETED', meta.returns.length),
+        createdAt: process.createdAt,
+        updatedAt: process.updatedAt,
+        vendor: process.vendor,
+        returns: meta.returns,
+      };
     });
 
-    return NextResponse.json({ success: true, message: 'Lot deleted successfully.' });
-  } catch {
-    return NextResponse.json({ error: 'Unable to delete lot. Please try again.' }, { status: 400 });
+    const inProcessWeight = lot.processes.reduce((acc, process) => {
+      const issued = Number(process.inputWeight);
+      const returned = Number(process.outputWeight) + Number(process.lossWeight);
+      return acc + Math.max(issued - returned, 0);
+    }, 0);
+
+    const totalLaborCost = lot.processes.reduce((acc, process) => {
+      return acc + Number(process.costAmount);
+    }, 0);
+
+    const payload = {
+      id: lot.id,
+      lotNumber: lot.lotNo,
+      name: lot.notes || lot.lotNo,
+      purchaseId: lot.sourcePurchaseId,
+      initialWeight: lot.initialWeight.toString(),
+      availableWeight: lot.currentWeight.toString(),
+      inProcessWeight: inProcessWeight.toFixed(3),
+      finishedWeight: '0.000',
+      lostWeight: lot.processes.reduce((acc, process) => acc + Number(process.lossWeight), 0).toFixed(3),
+      purchaseCost: lot.accumulatedCost.toString(),
+      totalLaborCost: totalLaborCost.toFixed(2),
+      createdAt: lot.createdAt,
+      updatedAt: lot.updatedAt,
+      jobs,
+    };
+
+    return NextResponse.json({ data: payload });
+  } catch (error) {
+    console.error('GET /api/lots/[id] error:', error);
+    return NextResponse.json({ error: 'Failed to fetch lot' }, { status: 500 });
   }
 }

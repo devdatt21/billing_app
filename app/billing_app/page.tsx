@@ -78,6 +78,14 @@ export default function BillingHome() {
                 <p className="text-sm text-gray-600 mt-1">Upload and track purchase bills for audit and records.</p>
               </Link>
 
+              <Link
+                href="/billing_app/manufacturing/lots"
+                className="bg-white border border-gray-200 rounded-lg p-5 hover:border-blue-400 hover:shadow-sm"
+              >
+                <h2 className="text-lg font-semibold text-gray-900">Manufacturing Lots</h2>
+                <p className="text-sm text-gray-600 mt-1">Track lot balances, issue process jobs, and receive returns.</p>
+              </Link>
+
             </div>
           </>
         )}

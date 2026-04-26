@@ -1,0 +1,19 @@
+edit in purchase
+cutting - laser -> counted labor per caret (20/-)
+sarin 4p -> counted per piece (6/-)
+factory polishing -> counted per piece and labor differs depending on vendor
+
+suppose i have purchased 100 cts and if i add an entry in 
+let's say cutting for 20 cts i will wait to recieve completed 
+20 cts or can give another 20 cts for cutting also i will mark
+when i get delivery of any 20 cts i gave for cutting 
+
+same goes for other process also 
+
+problem will be in laedger management if we go with this 
+approach we can't keep the count of actual weight and cost 
+in the process 
+
+you have context about how we are building this diamond manufecturing management software 
+
+earlier we were building it on lots being a single source of truth 
