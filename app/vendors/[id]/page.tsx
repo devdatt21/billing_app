@@ -500,8 +500,8 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                             <span className="font-medium text-gray-800 dark:text-white">{payment.referenceNo || '-'}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500 block text-xs">Notes</span>
-                            <span className="font-medium text-gray-800">{payment.notes || '-'}</span>
+                            <span className="text-gray-500 dark:text-gray-400 block text-xs">Notes</span>
+                            <span className="font-medium text-gray-800 dark:text-white">{payment.notes || '-'}</span>
                           </div>
                         </div>
                       </div>
