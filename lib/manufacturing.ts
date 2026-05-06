@@ -86,11 +86,11 @@ export function toDecimal(value: string, field: string): Decimal {
 export function getLaborCost(
   billingType: BillingType,
   billingRate: Decimal,
-  issuedWeight: Decimal,
+  weightBasis: Decimal,
   returnedPieces: number
 ): Decimal {
   if (billingType === 'PER_CARAT') {
-    return issuedWeight.mul(billingRate);
+    return weightBasis.mul(billingRate);
   }
 
   if (billingType === 'PER_PIECE') {

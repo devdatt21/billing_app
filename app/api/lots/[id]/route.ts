@@ -27,6 +27,10 @@ export async function GET(
           where: { isDeleted: false },
           include: {
             vendor: { select: { id: true, name: true } },
+            returns: {
+              where: { isDeleted: false },
+              orderBy: { returnDate: 'asc' },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -45,10 +49,20 @@ export async function GET(
 
     const jobs = lot.processes.map((process) => {
       const meta = parseJobMeta(process.remarks);
+      const returns = process.returns.length > 0
+        ? process.returns.map((entry) => ({
+            id: entry.id,
+            returnedWeight: entry.returnedWeight.toString(),
+            returnedPieces: entry.returnedPieces,
+            laborCost: entry.laborCost.toString(),
+            isFinalReturn: entry.isFinalReturn,
+            returnDate: entry.returnDate.toISOString(),
+          }))
+        : meta.returns;
       
       let mappedStatus: string = process.status;
       if (process.status === 'IN_PROGRESS') {
-        mappedStatus = meta.returns.length > 0 ? 'PARTIAL' : 'OPEN';
+        mappedStatus = returns.length > 0 ? 'PARTIAL' : 'OPEN';
       }
 
       return {
@@ -64,7 +78,7 @@ export async function GET(
         createdAt: process.createdAt,
         updatedAt: process.updatedAt,
         vendor: process.vendor,
-        returns: meta.returns,
+        returns,
       };
     });
 

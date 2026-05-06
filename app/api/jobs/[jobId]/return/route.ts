@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getUserFromHeaders } from '@/lib/auth-helpers';
 import { ReceiveManufacturingReturnSchema } from '@/lib/validations';
-import { getLaborCost, parseJobMeta, serializeJobMeta, stageToCostCategory, toDecimal } from '@/lib/manufacturing';
+import { getLaborCost, parseJobMeta, stageToCostCategory, toDecimal } from '@/lib/manufacturing';
 
 export async function POST(
   request: NextRequest,
@@ -40,6 +40,10 @@ export async function POST(
         include: {
           lot: true,
           processType: true,
+          returns: {
+            where: { isDeleted: false },
+            orderBy: { returnDate: 'asc' },
+          },
         },
       });
 
@@ -53,10 +57,15 @@ export async function POST(
 
       const meta = parseJobMeta(job.remarks);
       const issuedWeight = toDecimal(job.inputWeight.toString(), 'issued weight');
-      const alreadyReturnedDecimal = meta.returns.reduce(
+      const rowReturnedDecimal = job.returns.reduce(
+        (acc, entry) => acc.add(entry.returnedWeight.toString()),
+        toDecimal('0', 'returned weight')
+      );
+      const legacyReturnedDecimal = meta.returns.reduce(
         (acc, entry) => acc.add(entry.returnedWeight),
         toDecimal('0', 'returned weight')
       );
+      const alreadyReturnedDecimal = rowReturnedDecimal.gt(0) ? rowReturnedDecimal : legacyReturnedDecimal;
       const totalReturned = alreadyReturnedDecimal.add(returnedWeight);
 
       if (totalReturned.gt(issuedWeight)) {
@@ -64,19 +73,16 @@ export async function POST(
       }
 
       const billingRate = toDecimal(meta.billingRate, 'billing rate');
-      const laborCost = getLaborCost(meta.billingType, billingRate, issuedWeight, validated.returnedPieces);
+      const laborCost = meta.billingType === 'FIXED' && !validated.isFinalReturn
+        ? toDecimal('0', 'labor cost')
+        : getLaborCost(
+            meta.billingType,
+            billingRate,
+            meta.billingType === 'FIXED' ? issuedWeight : returnedWeight,
+            validated.returnedPieces
+          );
 
       const returnDate = new Date();
-      meta.returns.push({
-        id: meta.nextReturnId,
-        returnedWeight: returnedWeight.toString(),
-        returnedPieces: validated.returnedPieces,
-        laborCost: laborCost.toString(),
-        isFinalReturn: validated.isFinalReturn,
-        returnDate: returnDate.toISOString(),
-      });
-      meta.nextReturnId += 1;
-
       const nextOutput = toDecimal(job.outputWeight.toString(), 'output weight').add(returnedWeight);
       let nextLoss = toDecimal(job.lossWeight.toString(), 'loss weight');
       let nextStatus: 'IN_PROGRESS' | 'COMPLETED' = 'IN_PROGRESS';
@@ -94,6 +100,19 @@ export async function POST(
         nextStatus = 'COMPLETED';
       }
 
+      const jobReturn = await tx.jobReturn.create({
+        data: {
+          lotProcessId: job.id,
+          returnedWeight: new Prisma.Decimal(returnedWeight.toString()),
+          returnedPieces: validated.returnedPieces,
+          lossWeight: new Prisma.Decimal(lotLostWeightToAdd.toString()),
+          laborCost: new Prisma.Decimal(laborCost.toString()),
+          isFinalReturn: validated.isFinalReturn,
+          returnDate,
+          createdBy: user.userId,
+        },
+      });
+
       await tx.lotProcess.update({
         where: { id: job.id },
         data: {
@@ -102,7 +121,6 @@ export async function POST(
           status: nextStatus,
           returnedAt: validated.isFinalReturn ? returnDate : null,
           costAmount: new Prisma.Decimal(toDecimal(job.costAmount.toString(), 'cost amount').add(laborCost).toString()),
-          remarks: serializeJobMeta(meta),
           updatedBy: user.userId,
         },
       });
@@ -123,6 +141,8 @@ export async function POST(
       await tx.materialMovement.create({
         data: {
           lotId: job.lotId,
+          lotProcessId: job.id,
+          jobReturnId: jobReturn.id,
           movementType: 'RETURN',
           fromBucket: 'VENDOR_WIP',
           toBucket: 'SAFE',
@@ -134,6 +154,8 @@ export async function POST(
         await tx.materialMovement.create({
           data: {
             lotId: job.lotId,
+            lotProcessId: job.id,
+            jobReturnId: jobReturn.id,
             movementType: 'LOSS',
             fromBucket: 'VENDOR_WIP',
             toBucket: 'LOST',
@@ -148,7 +170,7 @@ export async function POST(
             lotId: job.lotId,
             category: stageToCostCategory(job.processType.stage),
             sourceType: 'JOB_RETURN',
-            sourceRefId: job.id,
+            sourceRefId: jobReturn.id,
             amount: new Prisma.Decimal(laborCost.toString()),
             costDate: returnDate,
             remarks: `${meta.processName || 'Process'} labor`,
@@ -159,6 +181,8 @@ export async function POST(
         await tx.costMovement.create({
           data: {
             lotId: job.lotId,
+            lotProcessId: job.id,
+            jobReturnId: jobReturn.id,
             costType: 'LABOR_COST',
             amount: new Prisma.Decimal(laborCost.toString()),
           },

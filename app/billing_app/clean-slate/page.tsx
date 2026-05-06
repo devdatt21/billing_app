@@ -10,6 +10,7 @@ import { DetailPageSkeleton } from '@/components/PageSkeleton';
 
 interface CleanSlateSummary {
   lotProcessesSoftDeleted: number;
+  jobReturnsSoftDeleted: number;
   lotCostsSoftDeleted: number;
   lotSplitsSoftDeleted: number;
   lotsSoftDeleted: number;
@@ -127,6 +128,7 @@ export default function CleanSlatePage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Execution Summary</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                   <p className="text-gray-700 dark:text-gray-300">Lot Processes Cleared: <span className="font-semibold">{result.lotProcessesSoftDeleted}</span></p>
+                  <p className="text-gray-700 dark:text-gray-300">Job Returns Cleared: <span className="font-semibold">{result.jobReturnsSoftDeleted}</span></p>
                   <p className="text-gray-700 dark:text-gray-300">Lot Costs Cleared: <span className="font-semibold">{result.lotCostsSoftDeleted}</span></p>
                   <p className="text-gray-700 dark:text-gray-300">Lot Splits Cleared: <span className="font-semibold">{result.lotSplitsSoftDeleted}</span></p>
                   <p className="text-gray-700 dark:text-gray-300">Lots Cleared: <span className="font-semibold">{result.lotsSoftDeleted}</span></p>

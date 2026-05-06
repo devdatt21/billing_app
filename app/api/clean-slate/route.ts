@@ -50,6 +50,28 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      const jobReturnsSoftDeleted = await tx.jobReturn.updateMany({
+        where: {
+          isDeleted: false,
+          OR: [
+            { createdBy: user.userId },
+            ...(lotIds.length > 0
+              ? [
+                  {
+                    lotProcess: {
+                      lotId: { in: lotIds },
+                    },
+                  },
+                ]
+              : []),
+          ],
+        },
+        data: {
+          isDeleted: true,
+          deletedAt: now,
+        },
+      });
+
       const lotCostsSoftDeleted = await tx.lotCost.updateMany({
         where: {
           isDeleted: false,
@@ -176,6 +198,7 @@ export async function POST(request: NextRequest) {
 
       return {
         lotProcessesSoftDeleted: lotProcessesSoftDeleted.count,
+        jobReturnsSoftDeleted: jobReturnsSoftDeleted.count,
         lotCostsSoftDeleted: lotCostsSoftDeleted.count,
         lotSplitsSoftDeleted: lotSplitsSoftDeleted.count,
         lotsSoftDeleted: lotsSoftDeleted.count,

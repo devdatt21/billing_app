@@ -102,7 +102,7 @@ export async function POST(
       meta.returns = [];
       meta.nextReturnId = 1;
 
-      await tx.lotProcess.create({
+      const process = await tx.lotProcess.create({
         data: {
           lotId,
           processTypeId,
@@ -135,6 +135,7 @@ export async function POST(
       await tx.materialMovement.create({
         data: {
           lotId,
+          lotProcessId: process.id,
           movementType: 'ISSUE',
           fromBucket: 'SAFE',
           toBucket: 'VENDOR_WIP',

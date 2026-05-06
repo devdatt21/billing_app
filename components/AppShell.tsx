@@ -41,6 +41,7 @@ const navItems: NavItem[] = [
     label: 'Manufacturing Module',
     children: [
       { label: 'Lots', href: '/billing_app/manufacturing/lots' },
+      { label: 'Vendor Ledger', href: '/billing_app/vendors' },
     ],
   },
   { kind: 'link', label: 'Clean Slate', href: '/billing_app/clean-slate' },
