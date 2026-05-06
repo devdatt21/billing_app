@@ -267,7 +267,7 @@ export default function LotDetailPage({ params }: { params: { id: string } }) {
       <header className="sticky top-0 z-20 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex min-h-16 items-center justify-between gap-3 px-4">
           <div className="flex items-center gap-3">
-            <Link href="/billing_app/manufacturing/lots" className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label="Back to lots">
+            <Link href="/manufacturing/lots" className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label="Back to lots">
               <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>

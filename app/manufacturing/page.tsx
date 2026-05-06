@@ -7,7 +7,7 @@ export default function ManufacturingIndexPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/billing_app/manufacturing/lots');
+    router.replace('/manufacturing/lots');
   }, [router]);
 
   return null;

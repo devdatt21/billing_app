@@ -178,10 +178,10 @@ export default function CompanySelect({
     if (trimmedQuery) {
       params.set('name', trimmedQuery);
     }
-    params.set('returnTo', pathname || '/billing_app/invoices/create');
+    params.set('returnTo', pathname || '/invoices/create');
 
     setIsOpen(false);
-    router.push(`/billing_app/companies?${params.toString()}`);
+    router.push(`/companies?${params.toString()}`);
   };
 
   const addCompanyLabel = roleFilter === 'seller' ? 'Add seller company' : roleFilter === 'buyer' ? 'Add buyer company' : 'Add company';

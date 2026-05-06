@@ -102,7 +102,7 @@ export default function InvoiceEditorPage() {
       if (response.ok) {
         const invoice = await response.json();
         toast.success('Invoice created successfully.');
-        router.push(`/billing_app/invoices/${invoice.id}`);
+        router.push(`/invoices/${invoice.id}`);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to create invoice');

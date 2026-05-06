@@ -288,7 +288,7 @@ export default function PurchaseInvoicesPage() {
         <div className="flex min-h-16 items-center justify-between gap-3 px-4">
           <div className="flex items-center gap-3">
             <Link
-              href="/billing_app"
+              href="/"
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               aria-label="Back to Home"
             >

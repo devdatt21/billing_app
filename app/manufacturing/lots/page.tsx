@@ -73,6 +73,15 @@ export default function ManufacturingLotsPage() {
     loadLots();
   }, [user]);
 
+  const money = (value: string | number) => `₹${Number(value).toFixed(2)}`;
+
+  const totals = {
+    initialWeight: items.reduce((sum, item) => sum + Number(item.initialWeight), 0),
+    availableWeight: items.reduce((sum, item) => sum + Number(item.availableWeight), 0),
+    totalLaborCost: items.reduce((sum, item) => sum + Number(item.totalLaborCost), 0),
+    totalPurchaseCost: items.reduce((sum, item) => sum + Number(item.purchaseCost), 0),
+  };
+
   const onCreate = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
@@ -118,7 +127,7 @@ export default function ManufacturingLotsPage() {
       <header className="sticky top-0 z-20 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex min-h-16 items-center justify-between gap-3 px-4">
           <div className="flex items-center gap-3">
-            <Link href="/billing_app" className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label="Back to Home">
+            <Link href="/" className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" aria-label="Back to Home">
               <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
@@ -196,6 +205,27 @@ export default function ManufacturingLotsPage() {
           </form>
         ) : null}
 
+        {!loading && !isLoading && items.length > 0 && (
+          <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Initial Weight</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{totals.initialWeight.toFixed(3)} ct</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Available</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{totals.availableWeight.toFixed(3)} ct</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Labor Cost</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{money(totals.totalLaborCost)}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Purchase Cost</p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{money(totals.totalPurchaseCost)}</p>
+            </div>
+          </section>
+        )}
+
         {loading || isLoading ? (
           <div className="py-16 flex justify-center">
             <Loader />
@@ -235,7 +265,7 @@ export default function ManufacturingLotsPage() {
                       <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">₹{Number(lot.totalLaborCost).toFixed(2)}</td>
                       <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
                         <Link
-                          href={`/billing_app/manufacturing/lots/${lot.id}`}
+                          href={`/manufacturing/lots/${lot.id}`}
                           className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400"
                         >
                           Open
@@ -278,7 +308,7 @@ export default function ManufacturingLotsPage() {
 
                   <div className="pt-2 flex justify-end">
                     <Link
-                      href={`/billing_app/manufacturing/lots/${lot.id}`}
+                      href={`/manufacturing/lots/${lot.id}`}
                       className="rounded border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-center"
                     >
                       Open Lot

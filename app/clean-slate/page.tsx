@@ -78,7 +78,7 @@ export default function CleanSlatePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm dark:bg-slate-900 dark:border-slate-800">
         <div className="px-4 py-3 flex items-center gap-3">
-          <Link href="/billing_app" className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg" aria-label="Back to Billing Home">
+          <Link href="/" className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg" aria-label="Back to Home">
             <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>

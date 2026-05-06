@@ -30,21 +30,21 @@ const navItems: NavItem[] = [
     kind: 'group',
     label: 'Billing Module',
     children: [
-      { label: 'Invoices', href: '/billing_app/invoices', excludePrefixes: ['/billing_app/invoices/create'] },
-      { label: 'Create Invoice', href: '/billing_app/invoices/create', exact: true },
-      { label: 'Companies', href: '/billing_app/companies' },
-      { label: 'Purchase Invoices', href: '/billing_app/purchase-invoices' },
+      { label: 'Invoices', href: '/invoices', excludePrefixes: ['/invoices/create'] },
+      { label: 'Create Invoice', href: '/invoices/create', exact: true },
+      { label: 'Companies', href: '/companies' },
+      { label: 'Purchase Invoices', href: '/purchase-invoices' },
     ],
   },
   {
     kind: 'group',
     label: 'Manufacturing Module',
     children: [
-      { label: 'Lots', href: '/billing_app/manufacturing/lots' },
-      { label: 'Vendor Ledger', href: '/billing_app/vendors' },
+      { label: 'Lots', href: '/manufacturing/lots' },
+      { label: 'Vendor Ledger', href: '/vendors' },
     ],
   },
-  { kind: 'link', label: 'Clean Slate', href: '/billing_app/clean-slate' },
+  { kind: 'link', label: 'Clean Slate', href: '/clean-slate' },
 ];
 
 const publicRoutes = new Set([

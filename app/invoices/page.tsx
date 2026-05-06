@@ -48,7 +48,7 @@ export default function InvoicesListPage() {
         <div className="flex min-h-16 items-center justify-between gap-3 px-4">
           <div className="flex items-center gap-3">
             <Link
-              href="/billing_app"
+              href="/"
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               aria-label="Back to Home"
             >
@@ -62,7 +62,7 @@ export default function InvoicesListPage() {
             Browse, search, and manage invoice records for sales.
           </p>
           <Link
-            href="/billing_app/invoices/create"
+            href="/invoices/create"
             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0"
           >
             <span className="hidden sm:inline">+ New Invoice</span>
@@ -84,7 +84,7 @@ export default function InvoicesListPage() {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No invoices yet</h3>
             <p className="text-gray-600 mb-6">Get started by creating your first invoice</p>
             <Link
-              href="/billing_app/invoices/create"
+              href="/invoices/create"
               className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Create Invoice
@@ -97,7 +97,7 @@ export default function InvoicesListPage() {
               {invoices.map((invoice) => (
                 <Link
                   key={invoice.id}
-                  href={`/billing_app/invoices/${invoice.id}`}
+                  href={`/invoices/${invoice.id}`}
                   className="block bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
                 >
                   <div className="space-y-3">
