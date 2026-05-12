@@ -118,7 +118,7 @@ export default function InvoiceEditorPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-800">
-        <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+        <div className="max-w-6xl mx-auto flex min-h-16 items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               type="button"

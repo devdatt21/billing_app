@@ -135,7 +135,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header - No Print */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm no-print">
-        <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <button
               onClick={() => router.push('/invoices')}
@@ -166,7 +166,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
       </header>
 
       {/* Invoice Content */}
-      <div className="max-w-5xl mx-auto p-3 sm:p-6 lg:p-8">
+      <div className="max-w-6xl mx-auto p-3 sm:p-6 lg:p-8">
         {loading ? (
           <DetailPageSkeleton />
         ) : (

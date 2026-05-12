@@ -19,9 +19,17 @@ interface InvoiceData {
   buyer: Company;
   deliveryNote?: string | null;
   terms?: string | null;
-  lines: InvoiceLine[];
-  sgstRate: string;
-  cgstRate: string;
+  lines: Array<{
+    id: number;
+    description: string;
+    hsn?: string | null;
+    qty: string | number | { toString(): string };
+    unit?: string | null;
+    rate: string | number | { toString(): string };
+    amount?: string | number | { toString(): string };
+  }>;
+  sgstRate: string | number | { toString(): string };
+  cgstRate: string | number | { toString(): string };
 }
 
 export default function EditInvoicePage({ params }: { params: { id: string } }) {
@@ -69,19 +77,27 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
           setDeliveryNote(data.deliveryNote || '');
           setTerms(data.terms || '');
           // Convert Decimal values to strings - handle both Decimal objects and regular numbers
-          const sgstVal = typeof data.sgstRate === 'object' ? data.sgstRate.toString() : String(data.sgstRate);
-          const cgstVal = typeof data.cgstRate === 'object' ? data.cgstRate.toString() : String(data.cgstRate);
+          const sgstVal = typeof data.sgstRate === 'string' 
+            ? data.sgstRate 
+            : typeof data.sgstRate === 'number' 
+            ? String(data.sgstRate)
+            : data.sgstRate.toString();
+          const cgstVal = typeof data.cgstRate === 'string' 
+            ? data.cgstRate 
+            : typeof data.cgstRate === 'number' 
+            ? String(data.cgstRate)
+            : data.cgstRate.toString();
           setSgstPct(sgstVal);
           setCgstPct(cgstVal);
           // Convert line items to ensure qty, rate, and amount are strings
-          const convertedLines = data.lines.map((line: any) => ({
-            id: line.id,
+          const convertedLines = data.lines.map((line) => ({
+            id: String(line.id),
             description: line.description,
             hsn: line.hsn || '',
-            qty: String(line.qty),
+            qty: typeof line.qty === 'string' ? line.qty : String(line.qty),
             unit: line.unit || 'Cts',
-            rate: String(line.rate),
-            amount: String(line.amount),
+            rate: typeof line.rate === 'string' ? line.rate : String(line.rate),
+            amount: typeof line.amount === 'string' ? line.amount : String(line.amount),
           }));
           setLines(convertedLines);
         } else {
@@ -169,7 +185,7 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-800">
-        <div className="flex min-h-16 items-center justify-between gap-3 px-4">
+        <div className="max-w-6xl mx-auto flex min-h-16 items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -269,13 +285,13 @@ export default function EditInvoicePage({ params }: { params: { id: string } }) 
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                   Seller <span className="text-red-500">*</span>
                 </label>
-                <CompanySelect value={seller} onChange={setSeller} />
+                <CompanySelect value={seller} onChange={setSeller} label="Seller" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                   Buyer <span className="text-red-500">*</span>
                 </label>
-                <CompanySelect value={buyer} onChange={setBuyer} />
+                <CompanySelect value={buyer} onChange={setBuyer} label="Buyer" required />
               </div>
             </div>
 

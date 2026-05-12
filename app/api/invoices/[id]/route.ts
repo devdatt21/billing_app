@@ -130,7 +130,7 @@ export async function PUT(
     const amountInWords = numberToWords(totals.totalAmount);
 
     // Update invoice in transaction
-    const updatedInvoice = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       // Update invoice
       const inv = await tx.invoice.update({
         where: { id },
@@ -162,8 +162,16 @@ export async function PUT(
       });
 
       // Create new invoice lines
+      interface InvoiceLine {
+        description: string;
+        hsn?: string | null;
+        qty: string | number;
+        unit?: string | null;
+        rate: string | number;
+        amount?: string | number;
+      }
       await Promise.all(
-        lines.map((line: any) =>
+        lines.map((line: InvoiceLine) =>
           tx.invoiceLine.create({
             data: {
               invoiceId: inv.id,
@@ -172,7 +180,7 @@ export async function PUT(
               qty: new Decimal(line.qty),
               unit: line.unit || null,
               rate: new Decimal(line.rate),
-              amount: new Decimal(line.qty) * new Decimal(line.rate),
+              amount: new Decimal(line.qty).times(new Decimal(line.rate)),
             },
           })
         )
