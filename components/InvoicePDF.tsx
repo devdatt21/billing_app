@@ -598,76 +598,84 @@ const InvoicePDF = ({ invoice }: { invoice: Invoice }) => {
             <Text style={[styles.tableHeaderCell, styles.col7]}>Amount</Text>
           </View>
           
-          {/* Table Body - Main Item Row */}
-          <View style={styles.tableRow}>
-            <Text style={[styles.tableCell, styles.tableCellBorder, styles.col1, styles.textCenter]}>1</Text>
-            
-            <View style={[styles.tableCell, styles.tableCellBorder, styles.col2]}>
-              <Text style={styles.bold}>{invoice.lines[0]?.description || 'Item'}</Text>
+          {/* Table Body - Line Items */}
+          {invoice.lines.map((line, lineIndex) => (
+            <View key={lineIndex} style={[styles.tableRow, { minHeight: lineIndex === 0 ? 180 : 'auto' }]}>
+              <Text style={[styles.tableCell, styles.tableCellBorder, styles.col1, styles.textCenter]}>{lineIndex + 1}</Text>
               
-              {/* Tax labels */}
-              <View style={styles.taxLabels}>
-                {isInterState ? (
+              <View style={[styles.tableCell, styles.tableCellBorder, styles.col2]}>
+                <Text style={styles.bold}>{line.description || 'Item'}</Text>
+                
+                {/* Tax labels - only show for first item */}
+                {lineIndex === 0 && (
                   <>
-                    <Text style={styles.taxLabelRow}>Output IGST</Text>
-                    <Text style={styles.taxLabelRow}>Rounding Off</Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.taxLabelRow}>Output CGST</Text>
-                    <Text style={styles.taxLabelRow}>Output SGST</Text>
-                    <Text style={styles.taxLabelRow}>Rounding Off</Text>
+                    <View style={styles.taxLabels}>
+                      {isInterState ? (
+                        <>
+                          <Text style={styles.taxLabelRow}>Output IGST</Text>
+                          <Text style={styles.taxLabelRow}>Rounding Off</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={styles.taxLabelRow}>Output CGST</Text>
+                          <Text style={styles.taxLabelRow}>Output SGST</Text>
+                          <Text style={styles.taxLabelRow}>Rounding Off</Text>
+                        </>
+                      )}
+                    </View>
+                    
+                    <Text style={styles.lessLabel}>Less :</Text>
                   </>
                 )}
               </View>
               
-              <Text style={styles.lessLabel}>Less :</Text>
-            </View>
-            
-            <Text style={[styles.tableCell, styles.tableCellBorder, styles.col3, styles.textCenter]}>
-              {invoice.lines[0]?.hsn || '-'}
-            </Text>
-            
-            <View style={[styles.tableCell, styles.tableCellBorder, styles.col4, styles.textCenter]}>
-              <Text style={styles.bold}>
-                {parseFloat(invoice.lines[0]?.qty || '0').toFixed(3)} {invoice.lines[0]?.unit || 'Pcs'}
-              </Text>
-            </View>
-            
-            <Text style={[styles.tableCell, styles.tableCellBorder, styles.col5, styles.textRight]}>
-              {formatIndianCurrency(invoice.lines[0]?.rate || '0')}
-            </Text>
-            
-            <Text style={[styles.tableCell, styles.tableCellBorder, styles.col6, styles.textCenter]}>
-              {invoice.lines[0]?.unit || 'Pcs'}
-            </Text>
-            
-            <View style={[styles.tableCell, styles.col7]}>
-              <Text style={[styles.textRight, styles.bold]}>
-                {formatIndianCurrency(invoice.subtotal)}
+              <Text style={[styles.tableCell, styles.tableCellBorder, styles.col3, styles.textCenter]}>
+                {line.hsn || '-'}
               </Text>
               
-              {/* Tax values */}
-              <View style={styles.taxValues}>
-                {isInterState ? (
-                  <>
-                    <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.totalTax)}</Text>
-                    <Text style={styles.taxLabelRow}>
-                      {parseFloat(invoice.rounding) >= 0 ? '' : '(-) '}{formatIndianCurrency(Math.abs(parseFloat(invoice.rounding)))}
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.cgstAmount)}</Text>
-                    <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.sgstAmount)}</Text>
-                    <Text style={styles.taxLabelRow}>
-                      {parseFloat(invoice.rounding) >= 0 ? '' : '(-) '}{formatIndianCurrency(Math.abs(parseFloat(invoice.rounding)))}
-                    </Text>
-                  </>
+              <View style={[styles.tableCell, styles.tableCellBorder, styles.col4, styles.textCenter]}>
+                <Text style={styles.bold}>
+                  {parseFloat(line.qty || '0').toFixed(3)} {line.unit || 'Pcs'}
+                </Text>
+              </View>
+              
+              <Text style={[styles.tableCell, styles.tableCellBorder, styles.col5, styles.textRight]}>
+                {formatIndianCurrency(line.rate || '0')}
+              </Text>
+              
+              <Text style={[styles.tableCell, styles.tableCellBorder, styles.col6, styles.textCenter]}>
+                {line.unit || 'Pcs'}
+              </Text>
+              
+              <View style={[styles.tableCell, styles.col7]}>
+                <Text style={[styles.textRight, styles.bold]}>
+                  {formatIndianCurrency(line.amount || '0')}
+                </Text>
+                
+                {/* Tax values - only show for first item */}
+                {lineIndex === 0 && (
+                  <View style={styles.taxValues}>
+                    {isInterState ? (
+                      <>
+                        <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.totalTax)}</Text>
+                        <Text style={styles.taxLabelRow}>
+                          {parseFloat(invoice.rounding) >= 0 ? '' : '(-) '}{formatIndianCurrency(Math.abs(parseFloat(invoice.rounding)))}
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.cgstAmount)}</Text>
+                        <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.sgstAmount)}</Text>
+                        <Text style={styles.taxLabelRow}>
+                          {parseFloat(invoice.rounding) >= 0 ? '' : '(-) '}{formatIndianCurrency(Math.abs(parseFloat(invoice.rounding)))}
+                        </Text>
+                      </>
+                    )}
+                  </View>
                 )}
               </View>
             </View>
-          </View>
+          ))}
           
           {/* Total Row */}
           <View style={styles.totalRow}>
