@@ -172,8 +172,7 @@ const styles = StyleSheet.create({
   
   tableRow: {
     flexDirection: 'row',
-    minHeight: 180,
-    position: 'relative',
+    minHeight: 28,
   },
   
   tableCell: {
@@ -600,33 +599,11 @@ const InvoicePDF = ({ invoice }: { invoice: Invoice }) => {
           
           {/* Table Body - Line Items */}
           {invoice.lines.map((line, lineIndex) => (
-            <View key={lineIndex} style={[styles.tableRow, { minHeight: lineIndex === 0 ? 180 : 'auto' }]}>
+            <View key={lineIndex} style={styles.tableRow}>
               <Text style={[styles.tableCell, styles.tableCellBorder, styles.col1, styles.textCenter]}>{lineIndex + 1}</Text>
               
               <View style={[styles.tableCell, styles.tableCellBorder, styles.col2]}>
                 <Text style={styles.bold}>{line.description || 'Item'}</Text>
-                
-                {/* Tax labels - only show for first item */}
-                {lineIndex === 0 && (
-                  <>
-                    <View style={styles.taxLabels}>
-                      {isInterState ? (
-                        <>
-                          <Text style={styles.taxLabelRow}>Output IGST</Text>
-                          <Text style={styles.taxLabelRow}>Rounding Off</Text>
-                        </>
-                      ) : (
-                        <>
-                          <Text style={styles.taxLabelRow}>Output CGST</Text>
-                          <Text style={styles.taxLabelRow}>Output SGST</Text>
-                          <Text style={styles.taxLabelRow}>Rounding Off</Text>
-                        </>
-                      )}
-                    </View>
-                    
-                    <Text style={styles.lessLabel}>Less :</Text>
-                  </>
-                )}
               </View>
               
               <Text style={[styles.tableCell, styles.tableCellBorder, styles.col3, styles.textCenter]}>
@@ -651,29 +628,20 @@ const InvoicePDF = ({ invoice }: { invoice: Invoice }) => {
                 <Text style={[styles.textRight, styles.bold]}>
                   {formatIndianCurrency(line.amount || '0')}
                 </Text>
-                
-                {/* Tax values - only show for first item */}
-                {lineIndex === 0 && (
-                  <View style={styles.taxValues}>
-                    {isInterState ? (
-                      <>
-                        <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.totalTax)}</Text>
-                        <Text style={styles.taxLabelRow}>
-                          {parseFloat(invoice.rounding) >= 0 ? '' : '(-) '}{formatIndianCurrency(Math.abs(parseFloat(invoice.rounding)))}
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.cgstAmount)}</Text>
-                        <Text style={styles.taxLabelRow}>{formatIndianCurrency(invoice.sgstAmount)}</Text>
-                        <Text style={styles.taxLabelRow}>
-                          {parseFloat(invoice.rounding) >= 0 ? '' : '(-) '}{formatIndianCurrency(Math.abs(parseFloat(invoice.rounding)))}
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                )}
               </View>
+            </View>
+          ))}
+          
+          {/* Filler rows to maintain table fullness */}
+          {Array.from({ length: Math.max(0, 6 - invoice.lines.length) }).map((_, i) => (
+            <View key={`filler-${i}`} style={styles.tableRow}>
+              <Text style={[styles.tableCell, styles.tableCellBorder, styles.col1]} />
+              <View style={[styles.tableCell, styles.tableCellBorder, styles.col2]} />
+              <Text style={[styles.tableCell, styles.tableCellBorder, styles.col3]} />
+              <View style={[styles.tableCell, styles.tableCellBorder, styles.col4]} />
+              <Text style={[styles.tableCell, styles.tableCellBorder, styles.col5]} />
+              <Text style={[styles.tableCell, styles.tableCellBorder, styles.col6]} />
+              <View style={[styles.tableCell, styles.col7]} />
             </View>
           ))}
           

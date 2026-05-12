@@ -155,6 +155,13 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
             <span className="hidden sm:inline">Download PDF</span>
             <span className="sm:hidden">PDF</span>
           </button>
+          <button
+            onClick={() => router.push(`/invoices/${params.id}/edit`)}
+            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0"
+          >
+            <span className="hidden sm:inline">Edit Invoice</span>
+            <span className="sm:hidden">Edit</span>
+          </button>
         </div>
       </header>
 
